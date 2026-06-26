@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+<title>Today</title>
+
+<style>
+/* ======================
+   DESIGN SYSTEM
+====================== */
+
+:root {
+  --bg: #0b0b0c;
+  --panel: #141416;
+  --panel-2: #1a1a1d;
+  --border: #26272b;
+  --text: #f2f2f2;
+  --muted: #a1a1aa;
+  --accent: #ffffff;
+
+  --radius: 16px;
+  --radius-sm: 12px;
+
+  --gap: 14px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ======================
+   LAYOUT
+====================== */
+
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.subtle {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Sections */
+.section {
+  margin-top: 22px;
+}
+
+.section-title {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+/* ======================
+   CARDS
+====================== */
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--gap);
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  min-height: 90px;
+}
+
+.card-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.card-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ======================
+   INPUT BLOCKS
+====================== */
+
+.input {
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  color: var(--text);
+  outline: none;
+  font-size: 14px;
+}
+
+.input::placeholder {
+  color: #6b6b74;
+}
+
+/* Top 3 */
+.top3 {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.top-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+
+/* MIT block */
+.mit {
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+/* Habits dot */
+.dot {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <div class="subtle">FRIDAY, JUNE 26</div>
+      <div class="title">Today</div>
+    </div>
+
+    <div class="subtle">⚙︎</div>
+  </div>
+
+  <!-- HABITS -->
+  <div class="section">
+    <div class="section-title">HABITS</div>
+
+    <div class="grid-3">
+
+      <div class="card">
+        <div class="card-title">Sleep</div>
+        <div class="card-sub">7–9 hours</div>
+        <div style="margin-top:12px;" class="dot"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Exercise</div>
+        <div class="card-sub">any movement</div>
+        <div style="margin-top:12px;" class="dot"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Water</div>
+        <div class="card-sub">2–3L</div>
+        <div style="margin-top:12px;" class="dot"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- TOP 3 -->
+  <div class="section">
+    <div class="section-title">TOP 3</div>
+
+    <div class="top3">
+      <div class="top-item">1 <input class="input" placeholder="What matters most today?" /></div>
+      <div class="top-item">2 <input class="input" placeholder="Second priority" /></div>
+      <div class="top-item">3 <input class="input" placeholder="Third priority" /></div>
+    </div>
+  </div>
+
+  <!-- MIT -->
+  <div class="section">
+    <div class="section-title">MOST IMPORTANT TASK</div>
+
+    <div class="mit">
+      <div class="card-title">⚡ MIT</div>
+      <input class="input" style="margin-top:10px;" placeholder="The one thing that counts" />
+    </div>
+  </div>
+
+  <!-- DEEP WORK -->
+  <div class="section">
+    <div class="section-title">DEEP WORK</div>
+
+    <div class="grid-3">
+
+      <div class="card">
+        <div class="card-title">Block 1</div>
+        <div class="card-sub">Focus session</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Block 2</div>
+        <div class="card-sub">Focus session</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Block 3</div>
+        <div class="card-sub">Focus session</div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
