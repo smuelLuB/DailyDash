@@ -27,7 +27,8 @@
   <h1>Daily Dashboard — Test Suite</h1>
   <p class="sub" style="margin-top:-0.5rem;">
     <strong>Run from a local server</strong>, not by double-clicking this file — open a terminal in this folder and run
-    <code>python3 -m http.server 8000</code> (or any static server), then visit
+    <code>python3 -m http.server 8000 --bind 127.0.0.1</code> (the <code>--bind</code> flag keeps the server reachable only
+    from this machine, not the rest of your network), then visit
     <code>http://localhost:8000/test.html</code>. Opening via <code>file://</code> directly will not work: browsers block
     a test page from reaching into the app's iframe under that protocol.
   </p>
