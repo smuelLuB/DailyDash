@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Daily Dashboard — Test Suite</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; background:#f8f8f7; color:#1a1a18; }
+  h1 { font-size: 22px; margin-bottom: 4px; }
+  p.sub { color:#5a5a57; margin-top:0; margin-bottom: 1.5rem; font-size: 14px; }
+  #run-btn { background:#185FA5; color:#fff; border:none; border-radius:8px; padding:10px 18px; font-size:15px; font-weight:600; cursor:pointer; }
+  #run-btn:disabled { opacity:0.5; cursor:default; }
+  #summary { margin: 1rem 0; font-size: 15px; font-weight:600; }
+  #summary.pass { color:#0F6E56; }
+  #summary.fail { color:#A4252E; }
+  .group { margin-top: 1.5rem; }
+  .group-title { font-size: 13px; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:#5a5a57; border-bottom:1px solid #e3e3e0; padding-bottom:4px; margin-bottom:6px; }
+  .case { display:flex; align-items:flex-start; gap:8px; padding:6px 0; font-size:14px; border-bottom:1px solid #f0f0ee; }
+  .case .dot { flex-shrink:0; width:18px; height:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; color:#fff; margin-top:1px; }
+  .case.pass .dot { background:#0F6E56; }
+  .case.fail .dot { background:#A4252E; }
+  .case .name { flex:1; }
+  .case .detail { color:#A4252E; font-size:12px; font-family: ui-monospace, monospace; white-space:pre-wrap; margin-top:4px; }
+  iframe#sandbox { width: 480px; height: 900px; border: 1px solid #ccc; position: absolute; left: -9999px; top: -9999px; }
+</style>
+</head>
+<body>
+  <h1>Daily Dashboard — Test Suite</h1>
+  <p class="sub" style="margin-top:-0.5rem;">
+    <strong>Run from a local server</strong>, not by double-clicking this file — open a terminal in this folder and run
+    <code>python3 -m http.server 8000</code> (or any static server), then visit
+    <code>http://localhost:8000/test.html</code>. Opening via <code>file://</code> directly will not work: browsers block
+    a test page from reaching into the app's iframe under that protocol.
+  </p>
+  <button id="run-btn" onclick="runAll()">Run Tests</button>
+  <div id="summary"></div>
+  <div id="results"></div>
+
+  <!-- The real app under test, loaded fresh for each test case -->
+  <iframe id="sandbox" src="about:blank"></iframe>
+
+  <script>
+    const STORAGE_KEY = 'adhd_dashboard_v1';
+    const SANDBOX_SRC = 'index.html'; // must sit next to this file
+    const resultsEl   = document.getElementById('results');
+    const summaryEl   = document.getElementById('summary');
+    const runBtn      = document.getElementById('run-btn');
+
+    /* Seeds the REAL localStorage (shared with the iframe, since both
+       pages are served from the same http:// origin) with the given
+       state object, then loads index.html fresh into the sandbox iframe
+       so its own getState()/render() run exactly as they would for a
+       real user. Returns the iframe's window once loaded. */
+    function loadApp(seedRaw) {
+      return new Promise((resolve, reject) => {
+        const iframe = document.getElementById('sandbox');
+
+        const seedStorage = () => {
+          // Start from a clean slate every time so tests can't leak into
+          // each other via leftover localStorage keys.
+          window.localStorage.clear();
+          if (seedRaw && seedRaw.state !== undefined) {
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seedRaw.state));
+          }
+          if (seedRaw && seedRaw.raw) {
+            Object.entries(seedRaw.raw).forEach(([k, v]) => window.localStorage.setItem(k, v));
+          }
+        };
+
+        const onBlankLoaded = () => {
+          iframe.removeEventListener('load', onBlankLoaded);
+          // Seed AFTER the previous page has fully unloaded (its
+          // beforeunload/saveNow has already fired by now), not before —
+          // otherwise the outgoing page's saveNow() can overwrite the
+          // seed we just wrote for the NEXT test with its own stale,
+          // empty-input values.
+          seedStorage();
+          const onRealLoaded = () => {
+            iframe.removeEventListener('load', onRealLoaded);
+            try {
+              const win = iframe.contentWindow;
+              win.confirm = () => true; // auto-accept resetDay()'s confirm()
+              win.alert   = () => {};
+              resolve(win);
+            } catch (err) {
+              reject(err);
+            }
+          };
+          iframe.addEventListener('load', onRealLoaded);
+          iframe.src = SANDBOX_SRC;
+        };
+
+        // Force a real reload even if src is already index.html, so each
+        // test gets a fresh script execution against freshly-seeded
+        // storage — navigate through about:blank first, THEN to the real
+        // page, with only one load listener active at a time so we never
+        // resolve with the wrong window or race the next test's nav.
+        iframe.addEventListener('load', onBlankLoaded);
+        iframe.src = 'about:blank';
+      });
+    }
+
+    /* ── Tiny test runner ──────────────────────────────────────────── */
+    const groups = [];
+    let currentGroup = null;
+    function group(name, fn) {
+      currentGroup = { name, cases: [] };
+      groups.push(currentGroup);
+      fn();
+    }
+    function test(name, fn) {
+      currentGroup.cases.push({ name, fn });
+    }
+    function assertEqual(actual, expected, label) {
+      const a = JSON.stringify(actual);
+      const e = JSON.stringify(expected);
+      if (a !== e) throw new Error(`${label || 'value'} — expected ${e}, got ${a}`);
+    }
+    function assertTrue(val, label) {
+      if (!val) throw new Error(`${label || 'condition'} — expected truthy, got ${JSON.stringify(val)}`);
+    }
+    function assertFalse(val, label) {
+      if (val) throw new Error(`${label || 'condition'} — expected falsy, got ${JSON.stringify(val)}`);
+    }
+
+    /* ── Date helpers mirroring the app's own date logic ───────────── */
+    function dateStr(d) { return d.toDateString(); }
+    function todayStr()  { return dateStr(new Date()); }
+    function yesterdayStr() {
+      const d = new Date(); d.setDate(d.getDate() - 1); return dateStr(d);
+    }
+    function twoDaysAgoStr() {
+      const d = new Date(); d.setDate(d.getDate() - 2); return dateStr(d);
+    }
+
+    function freshState(overrides) {
+      return Object.assign({
+        date: todayStr(), habits:{}, br:'', brDone:false, mit:'', mitDone:false,
+        tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:'',
+        brPrompts:{}, brPromptDate: todayStr(),
+      }, overrides || {});
+    }
+
+    /* ════════════════════════════════════════════════════════════════
+       TEST DEFINITIONS
+       ════════════════════════════════════════════════════════════════ */
+
+    group('Daily reset — new day wipes correctly, notes survive', () => {
+      test('habits/tasks/MIT/ball-roller/deep-work/shutdown reset on a new day; notes carry over', async () => {
+        const seedState = freshState({
+          date: yesterdayStr(),
+          habits: { sleep: true, exercise: true, water: true },
+          br: 'old ball roller', brDone: true,
+          mit: 'old mit', mitDone: true,
+          tasks: { 2: 'old t2', 3: 'old t3' }, taskDone: { 2: true, 3: true },
+          dw: { 1: true, 2: true },
+          sd: { env: true, brain: true, plan: true },
+          water: 1500,
+          notes: 'this should survive',
+        });
+        const win = await loadApp({ state: seedState });
+        const s = win.getState();
+        assertEqual(s.date, todayStr(), 'date rolled to today');
+        assertEqual(s.habits, {}, 'habits reset');
+        assertEqual(s.br, '', 'ball roller text reset');
+        assertFalse(s.brDone, 'ball roller done reset');
+        assertEqual(s.mit, '', 'MIT text reset');
+        assertFalse(s.mitDone, 'MIT done reset');
+        assertEqual(s.tasks, {}, 'tasks text reset');
+        assertEqual(s.taskDone, {}, 'tasks done reset');
+        assertEqual(s.dw, {}, 'deep work reset');
+        assertEqual(s.sd, {}, 'shutdown reset');
+        assertEqual(s.water, 0, 'water reset');
+        assertEqual(s.notes, 'this should survive', 'notes preserved across day rollover');
+      });
+
+      test('resetDay() (manual reset) keeps notes, wipes everything else, clears visible inputs', async () => {
+        const seedState = freshState({
+          habits: { sleep: true }, mit: 'todays mit', mitDone: true,
+          notes: 'keep me',
+        });
+        const win = await loadApp({ state: seedState });
+        win.resetDay(); // confirm() is stubbed to auto-accept
+        const s = win.getState();
+        assertEqual(s.habits, {}, 'habits wiped by manual reset');
+        assertFalse(s.mitDone, 'mit done wiped by manual reset');
+        assertEqual(s.notes, 'keep me', 'notes survive manual reset');
+        assertEqual(win.document.getElementById('mit').value, '', 'MIT input cleared in DOM');
+        assertEqual(win.document.getElementById('br-input').value, '', 'ball roller input cleared in DOM');
+      });
+    });
+
+    group('Schema guard — stale pre-rewrite shape on the same date', () => {
+      test('old-schema object (top3/done, no taskDone) dated today gets rebuilt fresh, not left broken', async () => {
+        const staleOldShape = {
+          date: todayStr(), // SAME day — this is the trap case
+          habits: { sleep: true },
+          top3: { 1: 'a', 2: 'b', 3: 'c' }, done: { 1: true },
+          mit: 'old mit field', dw: {}, sd: {}, water: 500, notes: 'old notes',
+          // no taskDone, no mitDone, no brDone, no tasks, no brPrompts — old shape
+        };
+        const win = await loadApp({ state: staleOldShape });
+        // render() must not throw — if it did, the app would already be
+        // broken before we get here, since render() runs on load.
+        const s = win.getState();
+        assertEqual(s.taskDone, {}, 'taskDone rebuilt as empty object, not undefined');
+        assertEqual(s.tasks, {}, 'tasks rebuilt fresh');
+        assertFalse(s.mitDone, 'mitDone defaults false on rebuilt schema');
+        assertEqual(s.notes, 'old notes', 'notes still preserved even on schema rebuild');
+        // Confirm the DOM actually rendered without throwing — progress label exists and is sane
+        const label = win.document.getElementById('progress-label').textContent;
+        assertTrue(/\d+ of \d+ done/.test(label), 'progress label rendered correctly after schema rebuild');
+      });
+
+      test('current-schema object on the same date is left untouched (no false-positive rebuild)', async () => {
+        const seedState = freshState({ taskDone: { 2: true }, tasks: { 2: 'real task' } });
+        const win = await loadApp({ state: seedState });
+        const s = win.getState();
+        assertTrue(s.taskDone[2] === true, 'existing taskDone preserved, not wiped');
+        assertEqual(s.tasks[2], 'real task', 'existing tasks text preserved');
+      });
+    });
+
+    group('Brain reset journal — 9pm expiry rule', () => {
+      test('prompts written yesterday are still valid today before 9pm (simulated via brPromptDate=yesterday, current real run uses whatever hour it actually is — boundary covered by unit test of getBrPromptDate below)', async () => {
+        const seedState = freshState({
+          date: todayStr(),
+          brPrompts: { loops: 'something on my mind' },
+          brPromptDate: yesterdayStr(),
+        });
+        const win = await loadApp({ state: seedState });
+        const s = win.getState();
+        const expiryBucket = win.getBrPromptDate();
+        if (seedState.brPromptDate === expiryBucket) {
+          assertEqual(s.brPrompts.loops, 'something on my mind', 'prompt still valid within expiry window');
+        } else {
+          assertEqual(s.brPrompts, {}, 'prompt correctly expired outside window');
+        }
+      });
+
+      test('prompts from 2+ days ago are always expired regardless of time of day', async () => {
+        const seedState = freshState({
+          date: todayStr(),
+          brPrompts: { loops: 'stale thought' },
+          brPromptDate: twoDaysAgoStr(),
+        });
+        const win = await loadApp({ state: seedState });
+        const s = win.getState();
+        assertEqual(s.brPrompts, {}, 'prompts older than the expiry bucket are cleared');
+        assertEqual(s.brPromptDate, todayStr(), 'brPromptDate stamped to today after expiry clear');
+      });
+
+      test('getBrPromptDate() returns yesterday before 9pm local, today at/after 9pm local', async () => {
+        const win = await loadApp({ state: freshState() });
+        const real = new Date();
+        const expected = real.getHours() < 21 ? yesterdayStr() : todayStr();
+        assertEqual(win.getBrPromptDate(), expected, 'expiry bucket matches expected hour-based rule');
+      });
+    });
+
+    group('Water tracker', () => {
+      test('quickAddWater clamps at 2000ml and disables further quick-adds at the cap', async () => {
+        const win = await loadApp({ state: freshState({ water: 1900 }) });
+        win.openDrawer('water');
+        win.quickAddWater(250);
+        assertEqual(win.getState().water, 2000, 'quick-add clamps to 2000 even if +250 would overshoot');
+        const btn = win.document.getElementById('w-quick-btn');
+        assertTrue(btn.disabled, 'quick-add button disabled once at cap');
+      });
+
+      test('addWater (manual entry) allows logging past the 2000ml goal, up to 5000ml cap', async () => {
+        const win = await loadApp({ state: freshState({ water: 1900 }) });
+        win.openDrawer('water');
+        const input = win.document.getElementById('w-in');
+        input.value = '500';
+        win.addWater();
+        assertEqual(win.getState().water, 2400, 'manual add can exceed the 2000ml goal');
+      });
+
+      test('addWater hard-caps at 5000ml even with a huge manual entry', async () => {
+        const win = await loadApp({ state: freshState({ water: 4900 }) });
+        win.openDrawer('water');
+        const input = win.document.getElementById('w-in');
+        input.value = '99999';
+        win.addWater();
+        assertEqual(win.getState().water, 5000, 'manual add still hard-capped at 5000ml');
+      });
+
+      test('setWater(0) resets the counter', async () => {
+        const win = await loadApp({ state: freshState({ water: 1200 }) });
+        win.setWater(0);
+        assertEqual(win.getState().water, 0, 'water reset to 0');
+      });
+    });
+
+    group('Toggles — booleans flip and persist', () => {
+      test('toggleHabit flips the named habit and persists it', async () => {
+        const win = await loadApp({ state: freshState() });
+        win.toggleHabit('sleep');
+        assertTrue(win.getState().habits.sleep, 'sleep habit toggled on');
+        win.toggleHabit('sleep');
+        assertFalse(win.getState().habits.sleep, 'sleep habit toggled back off');
+      });
+
+      test('toggleBR flips brDone and updates done-state classes', async () => {
+        const win = await loadApp({ state: freshState() });
+        win.toggleBR();
+        assertTrue(win.getState().brDone, 'brDone toggled on');
+        assertTrue(win.document.getElementById('br-box').classList.contains('done-state'), 'br-box gets done-state class');
+        assertTrue(win.document.getElementById('br-check').classList.contains('done'), 'br-check gets done class');
+      });
+
+      test('toggleMIT flips mitDone and updates done-state classes', async () => {
+        const win = await loadApp({ state: freshState() });
+        win.toggleMIT();
+        assertTrue(win.getState().mitDone, 'mitDone toggled on');
+        assertTrue(win.document.getElementById('mit-row').classList.contains('done-state'), 'mit-row gets done-state class');
+      });
+
+      test('toggleTask flips the right task slot only', async () => {
+        const win = await loadApp({ state: freshState() });
+        win.toggleTask(2);
+        assertTrue(win.getState().taskDone[2], 'task 2 toggled on');
+        assertFalse(!!win.getState().taskDone[3], 'task 3 untouched');
+      });
+
+      test('toggleBlock flips the right deep-work block only', async () => {
+        const win = await loadApp({ state: freshState() });
+        win.toggleBlock(1);
+        assertTrue(win.getState().dw[1], 'block 1 toggled on');
+        assertFalse(!!win.getState().dw[2], 'block 2 untouched');
+      });
+
+      test('toggleSD flips the right shutdown item only', async () => {
+        const win = await loadApp({ state: freshState() });
+        win.toggleSD('env');
+        assertTrue(win.getState().sd.env, 'env toggled on');
+        assertFalse(!!win.getState().sd.brain, 'brain untouched');
+        assertFalse(!!win.getState().sd.plan, 'plan untouched');
+      });
+    });
+
+    group('Progress calculation — 12 total checks', () => {
+      test('0 of 12 done on a totally fresh state', async () => {
+        const win = await loadApp({ state: freshState() });
+        win.updateProgress(win.getState());
+        assertEqual(win.document.getElementById('progress-label').textContent, '0 of 12 done', 'fresh state shows 0/12');
+        assertEqual(win.document.getElementById('progress').style.width, '0%', 'progress bar width 0%');
+      });
+
+      test('all 12 checks done shows 12 of 12 and 100% width', async () => {
+        const allDone = freshState({
+          habits: { sleep: true, exercise: true, water: true },
+          brDone: true, mitDone: true, taskDone: { 2: true, 3: true },
+          dw: { 1: true, 2: true },
+          sd: { env: true, brain: true, plan: true },
+        });
+        const win = await loadApp({ state: allDone });
+        win.updateProgress(win.getState());
+        assertEqual(win.document.getElementById('progress-label').textContent, '12 of 12 done', 'all-done state shows 12/12');
+        assertEqual(win.document.getElementById('progress').style.width, '100%', 'progress bar width 100%');
+      });
+
+      test('partial completion computes correct rounded percentage', async () => {
+        // 6 of 12 = 50%
+        const half = freshState({
+          habits: { sleep: true, exercise: true, water: true },
+          brDone: true, mitDone: true, taskDone: { 2: true },
+        });
+        const win = await loadApp({ state: half });
+        win.updateProgress(win.getState());
+        assertEqual(win.document.getElementById('progress-label').textContent, '6 of 12 done', '6 of 12 reported');
+        assertEqual(win.document.getElementById('progress').style.width, '50%', '50% width for 6/12');
+      });
+    });
+
+    group('DOM rendering — text inputs populate from saved state without clobbering', () => {
+      test('render() fills MIT/ball-roller/task inputs from saved state when inputs are empty', async () => {
+        const seeded = freshState({ br: 'saved br text', mit: 'saved mit text', tasks: { 2: 'saved t2', 3: 'saved t3' } });
+        const win = await loadApp({ state: seeded });
+        assertEqual(win.document.getElementById('br-input').value, 'saved br text', 'ball roller input populated');
+        assertEqual(win.document.getElementById('mit').value, 'saved mit text', 'MIT input populated');
+        assertEqual(win.document.getElementById('t2').value, 'saved t2', 'task 2 input populated');
+        assertEqual(win.document.getElementById('t3').value, 'saved t3', 'task 3 input populated');
+      });
+
+      test('render() does not overwrite an input the user is actively typing into', async () => {
+        const seeded = freshState({ mit: 'saved value' });
+        const win = await loadApp({ state: seeded });
+        const mitEl = win.document.getElementById('mit');
+        mitEl.value = 'user is typing this right now';
+        win.render(win.getState());
+        assertEqual(mitEl.value, 'user is typing this right now', 'render() does not clobber a non-empty input');
+      });
+
+      test('habit cards get the done class only when toggled, and only on the right card', async () => {
+        const win = await loadApp({ state: freshState() });
+        win.toggleHabit('exercise');
+        assertTrue(win.document.getElementById('hab-exercise').classList.contains('done'), 'exercise card marked done');
+        assertFalse(win.document.getElementById('hab-sleep').classList.contains('done'), 'sleep card untouched');
+        assertFalse(win.document.getElementById('hab-water').classList.contains('done'), 'water card untouched');
+      });
+
+      test('deep work block cards get the done class on toggle', async () => {
+        const win = await loadApp({ state: freshState() });
+        win.toggleBlock(2);
+        assertTrue(win.document.getElementById('dw-2').classList.contains('done'), 'block 2 marked done');
+        assertFalse(win.document.getElementById('dw-1').classList.contains('done'), 'block 1 untouched');
+      });
+
+      test('shutdown rows get the done class on toggle', async () => {
+        const win = await loadApp({ state: freshState() });
+        win.toggleSD('brain');
+        assertTrue(win.document.getElementById('sd-brain').classList.contains('done'), 'brain row marked done');
+        assertFalse(win.document.getElementById('sd-env').classList.contains('done'), 'env row untouched');
+      });
+
+      test('task rows get the done-state class on their input\'s wrapper only', async () => {
+        const win = await loadApp({ state: freshState() });
+        win.toggleTask(3);
+        const row3 = win.document.getElementById('t3').closest('.task-row');
+        const row2 = win.document.getElementById('t2').closest('.task-row');
+        assertTrue(row3.classList.contains('done-state'), 'task 3 row marked done-state');
+        assertFalse(row2.classList.contains('done-state'), 'task 2 row untouched');
+      });
+    });
+
+    /* ════════════════════════════════════════════════════════════════
+       RUNNER
+       ════════════════════════════════════════════════════════════════ */
+    async function runAll() {
+      runBtn.disabled = true;
+      runBtn.textContent = 'Running…';
+      resultsEl.innerHTML = '';
+      summaryEl.textContent = '';
+      summaryEl.className = '';
+
+      let pass = 0, fail = 0;
+
+      for (const g of groups) {
+        const groupDiv = document.createElement('div');
+        groupDiv.className = 'group';
+        const title = document.createElement('div');
+        title.className = 'group-title';
+        title.textContent = g.name;
+        groupDiv.appendChild(title);
+
+        for (const c of g.cases) {
+          const caseDiv = document.createElement('div');
+          try {
+            await c.fn();
+            pass++;
+            caseDiv.className = 'case pass';
+            caseDiv.innerHTML = `<div class="dot">✓</div><div class="name">${c.name}</div>`;
+          } catch (err) {
+            fail++;
+            caseDiv.className = 'case fail';
+            caseDiv.innerHTML = `<div class="dot">✕</div><div class="name">${c.name}<div class="detail">${(err && err.message) || err}</div></div>`;
+          }
+          groupDiv.appendChild(caseDiv);
+        }
+        resultsEl.appendChild(groupDiv);
+      }
+
+      summaryEl.textContent = `${pass} passed, ${fail} failed (${pass + fail} total)`;
+      summaryEl.className = fail === 0 ? 'pass' : 'fail';
+      window.localStorage.clear();
+      runBtn.disabled = false;
+      runBtn.textContent = 'Run Tests';
+    }
+  </script>
+</body>
+</html>
