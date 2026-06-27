@@ -131,29 +131,57 @@
     }
     .habit-card.done .check-circle { background: var(--success); border-color: var(--success); color: #fff; }
 
-    /* ── TOP 3 ───────────────────────────────────────────────────── */
-    .top3-list  { display: flex; flex-direction: column; gap: 10px; }
-    .top3-row   { display: flex; align-items: center; gap: 12px; }
-    .top3-num   { font-size: 14px; font-weight: 600; color: var(--text-muted); width: 18px; flex-shrink: 0; }
-    .top3-input {
+    /* ── BALL ROLLER ─────────────────────────────────────────────── */
+    .br-box {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .br-box.done-state { background: var(--accent-bg); border-color: var(--accent-border); }
+    .br-box.done-state .br-input { text-decoration: line-through; opacity: 0.5; }
+    .br-left  { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+    .br-badge {
+      font-size: 11px; font-weight: 700; color: var(--accent);
+      background: var(--accent-bg); border: 1px solid var(--accent-border);
+      border-radius: 6px; padding: 3px 7px; white-space: nowrap;
+    }
+    .br-sub   { font-size: 11px; color: var(--text-muted); }
+    .br-input {
       flex: 1; background: transparent; border: none;
-      border-bottom: 1px solid var(--border); padding: 8px 0;
       font-size: 16px; color: var(--text); outline: none; font-family: var(--font);
     }
-    .top3-input::placeholder { color: var(--text-muted); }
-    .top3-input:focus        { border-bottom-color: var(--accent); }
-    .top3-btn {
+    .br-input::placeholder { color: var(--text-muted); }
+    .br-check {
       width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--border-strong);
       background: transparent; display: flex; align-items: center; justify-content: center;
       font-size: 12px; color: transparent; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
     }
-    .top3-btn.done { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .br-check.done { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* ── TASKS (MIT + 2 more) ────────────────────────────────────── */
+    .tasks-list { display: flex; flex-direction: column; gap: 10px; }
+    .task-row   { display: flex; align-items: center; gap: 12px; }
+    .task-num   { font-size: 14px; font-weight: 600; color: var(--text-muted); width: 18px; flex-shrink: 0; }
+    .task-input {
+      flex: 1; background: transparent; border: none;
+      border-bottom: 1px solid var(--border); padding: 8px 0;
+      font-size: 16px; color: var(--text); outline: none; font-family: var(--font);
+    }
+    .task-input::placeholder { color: var(--text-muted); }
+    .task-input:focus        { border-bottom-color: var(--accent); }
+    .task-check {
+      width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+      background: transparent; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: transparent; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+    }
+    .task-check.done { background: var(--accent); border-color: var(--accent); color: #fff; }
 
     /* ── MIT ─────────────────────────────────────────────────────── */
-    .mit-box   {
+    .mit-row   {
       background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
       padding: 16px; display: flex; align-items: center; gap: 12px;
     }
+    .mit-row.done-state { background: var(--warning-bg); border-color: var(--warning-border); }
+    .mit-row.done-state .mit-input { text-decoration: line-through; opacity: 0.5; }
     .mit-badge {
       font-size: 11px; font-weight: 700; color: var(--warning);
       background: var(--warning-bg); border: 1px solid var(--warning-border);
@@ -165,6 +193,12 @@
       outline: none; font-family: var(--font);
     }
     .mit-input::placeholder { color: var(--text-muted); font-weight: 400; }
+    .mit-check {
+      width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+      background: transparent; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: transparent; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+    }
+    .mit-check.done { background: var(--warning); border-color: var(--warning); color: #fff; }
 
     /* ── DEEP WORK ───────────────────────────────────────────────── */
     .deep-work  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -214,6 +248,15 @@
       font-family: var(--font);
     }
     .help-btn:active { background: var(--surface-2); }
+    .journal-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: transparent; border: 1px solid var(--border-strong);
+      border-radius: 8px; padding: 4px 8px;
+      cursor: pointer; color: var(--text-secondary); font-size: 12px; font-weight: 600;
+      font-family: var(--font); white-space: nowrap; flex-shrink: 0;
+    }
+    .journal-btn:active { background: var(--surface-2); }
+    .journal-btn i { font-size: 14px; }
 
     /* ── RESET BTN ───────────────────────────────────────────────── */
     .reset-btn {
@@ -331,6 +374,33 @@
     .notes-ta:focus  { border-color: var(--accent); }
     .notes-ta::placeholder { color: var(--text-muted); }
     .notes-meta { font-size: 12px; color: var(--text-muted); margin-top: 8px; text-align: right; }
+
+    /* ── BRAIN RESET JOURNAL (drawer) ──────────────────────────────── */
+    .prompt-block  { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1.1rem; }
+    .prompt-label  {
+      font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .prompt-label i { font-size: 14px; }
+    .prompt-ta {
+      width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 12px; font-size: 14px; line-height: 1.6; min-height: 72px;
+      color: var(--text); font-family: var(--font); resize: none; outline: none;
+    }
+    .prompt-ta:focus       { border-color: var(--accent); }
+    .prompt-ta::placeholder { color: var(--text-muted); }
+    .prompt-hint { font-size: 11px; color: var(--text-muted); padding-left: 2px; }
+    .mark-done-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 0 4px; border-top: 1px solid var(--border); margin-top: 4px;
+    }
+    .mark-done-btn {
+      flex: 1; background: var(--warning-bg); border: 1px solid var(--warning-border);
+      border-radius: var(--radius); padding: 12px 16px;
+      font-size: 14px; font-weight: 600; color: var(--warning);
+      cursor: pointer; font-family: var(--font);
+    }
+    .mark-done-btn.done { background: var(--warning); border-color: var(--warning); color: #fff; }
   </style>
 </head>
 <body>
@@ -384,34 +454,37 @@
       </div>
     </div>
 
-    <!-- TOP 3 -->
+    <!-- BALL ROLLER -->
     <div class="section">
-      <div class="section-title">Top 3</div>
-      <div class="top3-list">
-        <div class="top3-row">
-          <div class="top3-num">1</div>
-          <input class="top3-input" id="t1" placeholder="What matters most today?" oninput="save()" />
-          <button class="top3-btn" id="t1c" onclick="toggleTop3(1)" aria-label="Mark done">✓</button>
+      <div class="br-box" id="br-box">
+        <div class="br-left">
+          <div class="br-badge">Ball Roller</div>
+          <div class="br-sub">gets the day rolling</div>
         </div>
-        <div class="top3-row">
-          <div class="top3-num">2</div>
-          <input class="top3-input" id="t2" placeholder="Second priority" oninput="save()" />
-          <button class="top3-btn" id="t2c" onclick="toggleTop3(2)" aria-label="Mark done">✓</button>
-        </div>
-        <div class="top3-row">
-          <div class="top3-num">3</div>
-          <input class="top3-input" id="t3" placeholder="Third priority" oninput="save()" />
-          <button class="top3-btn" id="t3c" onclick="toggleTop3(3)" aria-label="Mark done">✓</button>
-        </div>
+        <input class="br-input" id="br-input" placeholder="What kicks things off?" oninput="save()" />
+        <button class="br-check" id="br-check" onclick="toggleBR()" aria-label="Mark done">✓</button>
       </div>
     </div>
 
-    <!-- MIT -->
+    <!-- TASKS: MIT + 2 more -->
     <div class="section">
-      <div class="section-title">Most important task</div>
-      <div class="mit-box">
-        <div class="mit-badge">MIT</div>
-        <input class="mit-input" id="mit" placeholder="The one thing that counts" oninput="save()" />
+      <div class="section-title">Tasks</div>
+      <div class="tasks-list">
+        <div class="mit-row" id="mit-row">
+          <div class="mit-badge">MIT</div>
+          <input class="mit-input" id="mit" placeholder="The one thing that counts" oninput="save()" />
+          <button class="mit-check" id="mit-check" onclick="toggleMIT()" aria-label="Mark MIT done">✓</button>
+        </div>
+        <div class="task-row">
+          <div class="task-num">2</div>
+          <input class="task-input" id="t2" placeholder="Second priority" oninput="save()" />
+          <button class="task-check" id="t2c" onclick="toggleTask(2)" aria-label="Mark done">✓</button>
+        </div>
+        <div class="task-row">
+          <div class="task-num">3</div>
+          <input class="task-input" id="t3" placeholder="Third priority" oninput="save()" />
+          <button class="task-check" id="t3c" onclick="toggleTask(3)" aria-label="Mark done">✓</button>
+        </div>
       </div>
     </div>
 
@@ -442,21 +515,23 @@
     <div class="section">
       <div class="section-title">Shutdown ritual</div>
       <div class="shutdown-list">
-        <div class="sd-row" id="sd-plan" onclick="toggleSD('plan')">
-          <i class="ti ti-calendar-check sd-icon"></i>
-          <div class="sd-text">Tomorrow planned</div>
+        <div class="sd-row" id="sd-env" onclick="toggleSD('env')">
+          <i class="ti ti-plant sd-icon"></i>
+          <div class="sd-text">Environment reset</div>
+          <button class="help-btn" onclick="openHelp('env',event)" aria-label="What is environment reset?">?</button>
           <div class="sd-dot">✓</div>
         </div>
         <div class="sd-row" id="sd-brain" onclick="toggleSD('brain')">
           <i class="ti ti-brain sd-icon"></i>
           <div class="sd-text">Brain reset</div>
-          <button class="help-btn" onclick="openHelp('brain',event)" aria-label="What is brain reset?">?</button>
+          <button class="journal-btn" onclick="openDrawer('brain-reset',event)" aria-label="Open brain reset journal">
+            <i class="ti ti-notebook"></i> Journal
+          </button>
           <div class="sd-dot">✓</div>
         </div>
-        <div class="sd-row" id="sd-env" onclick="toggleSD('env')">
-          <i class="ti ti-plant sd-icon"></i>
-          <div class="sd-text">Environment reset</div>
-          <button class="help-btn" onclick="openHelp('env',event)" aria-label="What is environment reset?">?</button>
+        <div class="sd-row" id="sd-plan" onclick="toggleSD('plan')">
+          <i class="ti ti-calendar-check sd-icon"></i>
+          <div class="sd-text">Tomorrow planned</div>
           <div class="sd-dot">✓</div>
         </div>
       </div>
@@ -497,46 +572,80 @@
 const TODAY = new Date().toDateString();
 const KEY   = 'adhd_dashboard_v1';
 
+// Brain reset journal prompts clear at 9pm the day AFTER they're written,
+// not at midnight like everything else. getBrPromptDate() returns the
+// "expiry bucket" for right now: before 9pm, prompts written yesterday
+// are still valid, so we compare against yesterday's date string.
+function getBrPromptDate() {
+  const expiry = new Date();
+  if (expiry.getHours() < 21) expiry.setDate(expiry.getDate() - 1);
+  return expiry.toDateString();
+}
+
 function getState() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || '{}');
     if (s.date !== TODAY) {
-      // new day — keep notes, reset everything else
-      return { date: TODAY, habits:{}, top3:{}, done:{}, mit:'', dw:{}, sd:{}, water:0, notes: s.notes || '' };
+      // new day — keep notes and brPrompts (brPrompts have their own 9pm expiry below), reset everything else
+      return { date: TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || TODAY };
+    }
+    // brain reset prompts expire at 9pm the day after they were written
+    if (s.brPromptDate && s.brPromptDate !== getBrPromptDate() && new Date().getHours() >= 21) {
+      s.brPrompts = {};
+      s.brPromptDate = TODAY;
     }
     return s;
   } catch {
-    return { date: TODAY, habits:{}, top3:{}, done:{}, mit:'', dw:{}, sd:{}, water:0, notes:'' };
+    return { date: TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:'', brPrompts:{}, brPromptDate: TODAY };
   }
 }
 function persist(s) { localStorage.setItem(KEY, JSON.stringify(s)); }
 
 /* ── TOGGLES ───────────────────────────────────────────────────── */
 function toggleHabit(k) { const s=getState(); s.habits[k]=!s.habits[k]; persist(s); render(s); }
-function toggleTop3(n)  { const s=getState(); s.done[n]=!s.done[n];     persist(s); render(s); }
+function toggleBR()     { const s=getState(); s.brDone=!s.brDone;       persist(s); render(s); }
+function toggleMIT()    { const s=getState(); s.mitDone=!s.mitDone;     persist(s); render(s); }
+function toggleTask(n)  { const s=getState(); s.taskDone[n]=!s.taskDone[n]; persist(s); render(s); }
 function toggleBlock(n) { const s=getState(); s.dw[n]=!s.dw[n];         persist(s); render(s); }
 function toggleSD(k)    { const s=getState(); s.sd[k]=!s.sd[k];         persist(s); render(s); }
 
 /* ── TEXT SAVE ─────────────────────────────────────────────────── */
 function save() {
   const s = getState();
-  s.top3 = {
-    1: document.getElementById('t1').value,
+  s.br  = document.getElementById('br-input').value;
+  s.mit = document.getElementById('mit').value;
+  s.tasks = {
     2: document.getElementById('t2').value,
     3: document.getElementById('t3').value,
   };
-  s.mit = document.getElementById('mit').value;
   persist(s);
   updateProgress(s);
+}
+
+/* ── BRAIN RESET JOURNAL ───────────────────────────────────────── */
+function saveBrPrompt(key) {
+  const el = document.getElementById('bp-'+key);
+  if (!el) return;
+  const s = getState();
+  s.brPrompts[key] = el.value;
+  s.brPromptDate = TODAY;
+  persist(s);
+}
+function markBrainResetDone() {
+  const s = getState();
+  s.sd.brain = !s.sd.brain;
+  persist(s); render(s);
+  const btn = document.getElementById('br-done-btn');
+  if (btn) btn.className = 'mark-done-btn' + (s.sd.brain ? ' done' : '');
 }
 
 /* ── RESET ─────────────────────────────────────────────────────── */
 function resetDay() {
   if (!confirm('Reset today? Your notes will be kept.')) return;
-  const notes = getState().notes || '';
-  persist({ date: TODAY, habits:{}, top3:{}, done:{}, mit:'', dw:{}, sd:{}, water:0, notes });
+  const s = getState();
+  persist({ date: TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || TODAY });
   render(getState());
-  ['t1','t2','t3','mit'].forEach(id => { document.getElementById(id).value = ''; });
+  ['br-input','mit','t2','t3'].forEach(id => { document.getElementById(id).value = ''; });
 }
 
 /* ── RENDER ────────────────────────────────────────────────────── */
@@ -545,21 +654,27 @@ function render(s) {
   ['sleep','exercise','water'].forEach(h =>
     document.getElementById('hab-'+h).classList.toggle('done', !!s.habits[h])
   );
-  // top 3
-  [1,2,3].forEach(n => {
-    document.getElementById('t'+n+'c').classList.toggle('done', !!s.done[n]);
-    const inp = document.getElementById('t'+n);
-    if (s.top3 && s.top3[n] && !inp.value) inp.value = s.top3[n];
-    inp.style.textDecoration = s.done[n] ? 'line-through' : '';
-    inp.style.opacity        = s.done[n] ? '0.45' : '1';
-  });
+  // ball roller
+  if (s.br && !document.getElementById('br-input').value) document.getElementById('br-input').value = s.br;
+  document.getElementById('br-check').classList.toggle('done', !!s.brDone);
+  document.getElementById('br-box').classList.toggle('done-state', !!s.brDone);
   // MIT
   const mitEl = document.getElementById('mit');
   if (s.mit && !mitEl.value) mitEl.value = s.mit;
+  document.getElementById('mit-check').classList.toggle('done', !!s.mitDone);
+  document.getElementById('mit-row').classList.toggle('done-state', !!s.mitDone);
+  // tasks 2 & 3
+  [2,3].forEach(n => {
+    document.getElementById('t'+n+'c').classList.toggle('done', !!s.taskDone[n]);
+    const inp = document.getElementById('t'+n);
+    if (s.tasks && s.tasks[n] && !inp.value) inp.value = s.tasks[n];
+    inp.style.textDecoration = s.taskDone[n] ? 'line-through' : '';
+    inp.style.opacity        = s.taskDone[n] ? '0.45' : '1';
+  });
   // deep work
   [1,2].forEach(n => document.getElementById('dw-'+n).classList.toggle('done', !!s.dw[n]));
   // shutdown
-  ['plan','brain','env'].forEach(k =>
+  ['env','brain','plan'].forEach(k =>
     document.getElementById('sd-'+k).classList.toggle('done', !!s.sd[k])
   );
   updateProgress(s);
@@ -568,9 +683,9 @@ function render(s) {
 function updateProgress(s) {
   const checks = [
     s.habits.sleep, s.habits.exercise, s.habits.water,
-    s.done[1], s.done[2], s.done[3],
+    s.brDone, s.mitDone, s.taskDone[2], s.taskDone[3],
     s.dw[1], s.dw[2],
-    s.sd.plan, s.sd.brain, s.sd.env,
+    s.sd.env, s.sd.brain, s.sd.plan,
   ];
   const done  = checks.filter(Boolean).length;
   const total = checks.length;
@@ -579,10 +694,45 @@ function updateProgress(s) {
 }
 
 /* ── DRAWER ────────────────────────────────────────────────────── */
-function openDrawer(type) {
-  document.getElementById('drawer-title').textContent = type === 'water' ? 'Water tracker' : 'Brain dump';
-  document.getElementById('drawer-icon').className    = 'ti ti-' + (type === 'water' ? 'droplet' : 'notes');
-  document.getElementById('drawer-body').innerHTML    = type === 'water' ? buildWater() : buildNotes();
+const BRAIN_PROMPTS = [
+  { key:'loops', icon:'ti-infinity',     label:'Open loops',      placeholder:'What\'s still unfinished or nagging at you?',       hint:'Get it out of your head and onto the page.' },
+  { key:'worry', icon:'ti-alert-circle', label:'Worries',         placeholder:'Anything you\'re anxious about forgetting?',        hint:'Writing it down means your brain can let go.' },
+  { key:'wins',  icon:'ti-trophy',       label:'Wins today',      placeholder:'What did you actually get done?',                   hint:'Even small things count.' },
+  { key:'tmit',  icon:'ti-bolt',         label:'Tomorrow\'s MIT', placeholder:'What\'s the one thing that matters most tomorrow?', hint:'Set it now so you start with clarity.' },
+  { key:'other', icon:'ti-brain',        label:'Anything else',   placeholder:'Stray thoughts, ideas, things to remember…',       hint:'Clear the buffer.' },
+];
+function buildBrainReset() {
+  const s = getState();
+  const done = !!s.sd.brain;
+  const rows = BRAIN_PROMPTS.map(p => `
+    <div class="prompt-block">
+      <div class="prompt-label"><i class="ti ${p.icon}"></i> ${p.label}</div>
+      <textarea class="prompt-ta" id="bp-${p.key}" placeholder="${p.placeholder}" oninput="saveBrPrompt('${p.key}')">${s.brPrompts[p.key]||''}</textarea>
+      <div class="prompt-hint">${p.hint}</div>
+    </div>`).join('');
+  return rows + `
+    <div class="mark-done-row">
+      <button class="mark-done-btn${done?' done':''}" id="br-done-btn" onclick="markBrainResetDone()">
+        ${done ? '✓ Brain reset done' : 'Mark brain reset done'}
+      </button>
+    </div>`;
+}
+
+function openDrawer(type, e) {
+  if (e) e.stopPropagation();
+  if (type === 'water') {
+    document.getElementById('drawer-title').textContent = 'Water tracker';
+    document.getElementById('drawer-icon').className    = 'ti ti-droplet';
+    document.getElementById('drawer-body').innerHTML    = buildWater();
+  } else if (type === 'brain-reset') {
+    document.getElementById('drawer-title').textContent = 'Brain reset';
+    document.getElementById('drawer-icon').className    = 'ti ti-notebook';
+    document.getElementById('drawer-body').innerHTML    = buildBrainReset();
+  } else {
+    document.getElementById('drawer-title').textContent = 'Brain dump';
+    document.getElementById('drawer-icon').className    = 'ti ti-notes';
+    document.getElementById('drawer-body').innerHTML    = buildNotes();
+  }
   document.getElementById('overlay').classList.add('open');
   document.getElementById('drawer').classList.add('open');
 }
@@ -669,17 +819,6 @@ function saveNotes() {
 
 /* ── HELP POPUPS ───────────────────────────────────────────────── */
 const HELP = {
-  brain: {
-    title: 'Brain reset',
-    desc:  'A 5-minute end-of-day routine to offload everything rattling around in your head — so you can actually switch off.',
-    items: [
-      'Write down any open loops or unfinished thoughts',
-      'Note anything you\'re worried about forgetting',
-      'Quick review of what you got done today',
-      'Set your MIT for tomorrow',
-      'Say out loud: "Shutdown complete"',
-    ]
-  },
   env: {
     title: 'Environment reset (5 min)',
     desc:  'A quick tidy that makes tomorrow\'s you feel like they\'re starting from a good place, not digging out.',
