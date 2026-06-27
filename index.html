@@ -337,18 +337,17 @@
     .water-goal     { font-size: 13px; color: var(--text-muted); }
     .water-prog     { height: 5px; background: var(--border); border-radius: 99px; margin-bottom: 1.25rem; overflow: hidden; }
     .water-prog-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.3s ease; }
-    .water-cups     { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1rem; }
-    .cup {
-      background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
-      padding: 12px 6px; display: flex; flex-direction: column; align-items: center; gap: 5px;
-      cursor: pointer; user-select: none; transition: transform 0.1s;
+    .water-quick   { margin-bottom: 1rem; }
+    .quick-add-btn {
+      width: 100%; padding: 14px;
+      background: var(--surface-2); border: 2px dashed var(--border-strong); border-radius: var(--radius);
+      font-size: 16px; font-weight: 600; color: var(--text);
+      cursor: pointer; font-family: var(--font); display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.15s, border-color 0.15s;
     }
-    .cup:active      { transform: scale(0.94); }
-    .cup.filled      { background: var(--accent-bg); border-color: var(--accent-border); }
-    .cup i           { font-size: 22px; color: var(--text-muted); }
-    .cup.filled i    { color: var(--accent); }
-    .cup span        { font-size: 10px; color: var(--text-muted); font-weight: 500; }
-    .cup.filled span { color: var(--accent); }
+    .quick-add-btn:active:not(:disabled) { background: var(--accent-bg); border-color: var(--accent-border); }
+    .quick-add-btn.full { background: var(--accent-bg); border-color: var(--accent-border); border-style: solid; color: var(--accent); cursor: default; }
+    .quick-add-btn i    { font-size: 20px; }
     .water-actions   { display: flex; gap: 8px; }
     .water-actions input {
       flex: 1; padding: 11px 12px;
@@ -745,24 +744,21 @@ function closeDrawer() {
 function buildWater() {
   const s   = getState();
   const ml  = s.water || 0;
-  const pct = Math.min(100, Math.round(ml / 2500 * 100));
+  const pct = Math.min(100, Math.round(ml / 2000 * 100));
   const disp = ml >= 1000 ? (ml / 1000).toFixed(1) + 'L' : ml + 'ml';
-  const cups = Array.from({ length: 8 }, (_, i) => {
-    const t = (i + 1) * 250;
-    const filled = ml >= t;
-    const lbl = t < 1000 ? t + 'ml' : (t / 1000) + 'L';
-    return `<div class="cup ${filled ? 'filled' : ''}" onclick="setWater(${t})">
-      <i class="ti ti-glass-full"></i><span>${lbl}</span>
-    </div>`;
-  }).join('');
+  const full = ml >= 2000;
   return `
-    <div class="drawer-section-title">Today's intake</div>
+    <div class="drawer-section-title">Today\'s intake</div>
     <div class="water-display">
       <span class="water-num" id="w-num">${disp}</span>
-      <span class="water-goal">of 2.5L goal</span>
+      <span class="water-goal">of 2L goal</span>
     </div>
     <div class="water-prog"><div class="water-prog-fill" id="w-bar" style="width:${pct}%"></div></div>
-    <div class="water-cups" id="w-cups">${cups}</div>
+    <div class="water-quick">
+      <button class="quick-add-btn${full?' full':''}" id="w-quick-btn" onclick="quickAddWater(250)" ${full?'disabled':''}>
+        <i class="ti ti-glass-full"></i> +250ml
+      </button>
+    </div>
     <div class="water-actions">
       <input type="number" id="w-in" placeholder="Add ml…" min="1" max="2000" inputmode="numeric" />
       <button onclick="addWater()">Add</button>
@@ -770,6 +766,11 @@ function buildWater() {
     </div>`;
 }
 function setWater(ml) { const s=getState(); s.water=ml; persist(s); refreshWater(s); }
+function quickAddWater(ml) {
+  const s = getState();
+  s.water = Math.min(2000, (s.water || 0) + ml);
+  persist(s); refreshWater(s);
+}
 function addWater() {
   const inp = document.getElementById('w-in');
   const v   = parseInt(inp.value);
@@ -780,21 +781,18 @@ function addWater() {
 }
 function refreshWater(s) {
   const ml   = s.water || 0;
-  const pct  = Math.min(100, Math.round(ml / 2500 * 100));
+  const pct  = Math.min(100, Math.round(ml / 2000 * 100));
   const disp = ml >= 1000 ? (ml / 1000).toFixed(1) + 'L' : ml + 'ml';
+  const full = ml >= 2000;
   const numEl  = document.getElementById('w-num');
   const barEl  = document.getElementById('w-bar');
-  const cupsEl = document.getElementById('w-cups');
+  const btnEl  = document.getElementById('w-quick-btn');
   if (numEl)  numEl.textContent  = disp;
   if (barEl)  barEl.style.width  = pct + '%';
-  if (cupsEl) cupsEl.innerHTML   = Array.from({ length: 8 }, (_, i) => {
-    const t = (i + 1) * 250;
-    const filled = ml >= t;
-    const lbl = t < 1000 ? t + 'ml' : (t / 1000) + 'L';
-    return `<div class="cup ${filled ? 'filled' : ''}" onclick="setWater(${t})">
-      <i class="ti ti-glass-full"></i><span>${lbl}</span>
-    </div>`;
-  }).join('');
+  if (btnEl) {
+    btnEl.className = 'quick-add-btn' + (full ? ' full' : '');
+    btnEl.disabled  = full;
+  }
 }
 
 /* ── NOTES ─────────────────────────────────────────────────────── */
