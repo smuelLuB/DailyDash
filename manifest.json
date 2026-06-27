@@ -2,7 +2,7 @@
   "name": "Daily Dashboard",
   "short_name": "Dashboard",
   "description": "ADHD daily planner — habits, top 3, MIT, deep work, shutdown ritual",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#f8f8f7",
   "theme_color": "#f8f8f7",
