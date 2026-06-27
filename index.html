@@ -65,17 +65,31 @@
 .block-dot { width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--border-strong); display: flex; align-items: center; justify-content: center; color: transparent; font-size: 10px; flex-shrink: 0; margin-left: auto; }
 .block-card.done .block-dot { background: var(--fill-accent); border-color: var(--fill-accent); color: white; }
 
+/* SHUTDOWN */
 .shutdown-list { display: flex; flex-direction: column; gap: 8px; }
 .sd-row { display: flex; align-items: center; gap: 12px; background: var(--surface-1); border: 0.5px solid var(--border); border-radius: 12px; padding: 12px 16px; cursor: pointer; user-select: none; transition: all 0.15s; }
 .sd-row.done { background: var(--bg-warning); border-color: var(--border-warning); }
-.sd-icon { font-size: 18px; color: var(--text-secondary); }
+.sd-icon { font-size: 18px; color: var(--text-secondary); flex-shrink: 0; }
 .sd-row.done .sd-icon { color: var(--text-warning); }
 .sd-text { flex: 1; font-size: 14px; color: var(--text-primary); }
 .sd-row.done .sd-text { color: var(--text-warning); }
 .sd-dot { width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border-strong); display: flex; align-items: center; justify-content: center; color: transparent; font-size: 11px; flex-shrink: 0; }
 .sd-row.done .sd-dot { background: var(--fill-warning); border-color: var(--fill-warning); color: white; }
+
+/* journal open button */
+.journal-btn {
+  display: flex; align-items: center; gap: 5px;
+  background: transparent; border: 0.5px solid var(--border-strong);
+  border-radius: 8px; padding: 4px 8px;
+  cursor: pointer; color: var(--text-secondary); font-size: 12px; font-weight: 500;
+  font-family: var(--font-sans); white-space: nowrap; flex-shrink: 0;
+  transition: all 0.15s;
+}
+.journal-btn:hover { border-color: var(--fill-accent); color: var(--fill-accent); }
+.journal-btn i { font-size: 14px; }
+
 .help-btn { background: transparent; border: 0.5px solid var(--border-strong); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); font-size: 11px; font-weight: 600; flex-shrink: 0; font-family: var(--font-sans); }
-.help-btn:hover { color: var(--text-primary); border-color: var(--border-strong); }
+.help-btn:hover { color: var(--text-primary); }
 
 .reset-btn { background: transparent; border: none; cursor: pointer; color: var(--text-muted); font-size: 11px; margin-top: 1.5rem; display: block; margin-left: auto; }
 
@@ -94,23 +108,12 @@
 .prompt-block { display: flex; flex-direction: column; gap: 6px; }
 .prompt-label { font-size: 12px; font-weight: 600; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
 .prompt-label i { font-size: 14px; }
-.prompt-ta {
-  width: 100%; background: var(--surface-1); border: 0.5px solid var(--border);
-  border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.65;
-  color: var(--text-primary); font-family: var(--font-sans); resize: none; outline: none;
-  min-height: 72px; transition: border-color 0.15s;
-}
+.prompt-ta { width: 100%; background: var(--surface-1); border: 0.5px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 14px; line-height: 1.65; color: var(--text-primary); font-family: var(--font-sans); resize: none; outline: none; min-height: 72px; transition: border-color 0.15s; }
 .prompt-ta:focus { border-color: var(--fill-accent); }
 .prompt-ta::placeholder { color: var(--text-muted); }
 .prompt-hint { font-size: 11px; color: var(--text-muted); padding-left: 2px; }
-
 .mark-done-row { display: flex; align-items: center; gap: 10px; padding: 12px 0 4px; border-top: 0.5px solid var(--border); margin-top: 4px; }
-.mark-done-btn {
-  flex: 1; background: var(--bg-warning); border: 0.5px solid var(--border-warning);
-  border-radius: 10px; padding: 10px 16px; font-size: 14px; font-weight: 600;
-  color: var(--text-warning); cursor: pointer; font-family: var(--font-sans);
-  transition: opacity 0.15s;
-}
+.mark-done-btn { flex: 1; background: var(--bg-warning); border: 0.5px solid var(--border-warning); border-radius: 10px; padding: 10px 16px; font-size: 14px; font-weight: 600; color: var(--text-warning); cursor: pointer; font-family: var(--font-sans); transition: opacity 0.15s; }
 .mark-done-btn:hover { opacity: 0.85; }
 .mark-done-btn.done { background: var(--fill-warning); border-color: var(--fill-warning); color: white; }
 
@@ -207,12 +210,12 @@
         <div class="task-row">
           <div class="task-num">2</div>
           <input class="task-input" id="t2" placeholder="Second priority" oninput="save()" />
-          <button class="task-check" id="t2c" onclick="toggleTask(2)" aria-label="Mark task 2 done">✓</button>
+          <button class="task-check" id="t2c" onclick="toggleTask(2)">✓</button>
         </div>
         <div class="task-row">
           <div class="task-num">3</div>
           <input class="task-input" id="t3" placeholder="Third priority" oninput="save()" />
-          <button class="task-check" id="t3c" onclick="toggleTask(3)" aria-label="Mark task 3 done">✓</button>
+          <button class="task-check" id="t3c" onclick="toggleTask(3)">✓</button>
         </div>
       </div>
     </div>
@@ -233,26 +236,33 @@
       </div>
     </div>
 
+    <!-- SHUTDOWN — new order: env, brain, plan -->
     <div class="section">
       <div class="section-title">Shutdown ritual</div>
       <div class="shutdown-list">
+
+        <div class="sd-row" id="sd-env" onclick="toggleSD('env')">
+          <i class="ti ti-plant sd-icon"></i>
+          <div class="sd-text">Environment reset</div>
+          <button class="help-btn" onclick="openHelp('env',event)" aria-label="Environment reset checklist">?</button>
+          <div class="sd-dot">✓</div>
+        </div>
+
+        <div class="sd-row" id="sd-brain" onclick="toggleSD('brain')">
+          <i class="ti ti-brain sd-icon"></i>
+          <div class="sd-text">Brain reset</div>
+          <button class="journal-btn" onclick="openDrawer('brain-reset',event)" aria-label="Open brain reset journal">
+            <i class="ti ti-notebook"></i> Journal
+          </button>
+          <div class="sd-dot">✓</div>
+        </div>
+
         <div class="sd-row" id="sd-plan" onclick="toggleSD('plan')">
           <i class="ti ti-calendar-check sd-icon"></i>
           <div class="sd-text">Tomorrow planned</div>
           <div class="sd-dot">✓</div>
         </div>
-        <div class="sd-row" id="sd-brain" onclick="toggleSD('brain')">
-          <i class="ti ti-brain sd-icon"></i>
-          <div class="sd-text">Brain reset</div>
-          <button class="help-btn" onclick="openDrawer('brain-reset', event)" aria-label="Open brain reset">?</button>
-          <div class="sd-dot">✓</div>
-        </div>
-        <div class="sd-row" id="sd-env" onclick="toggleSD('env')">
-          <i class="ti ti-plant sd-icon"></i>
-          <div class="sd-text">Environment reset</div>
-          <button class="help-btn" onclick="openHelp('env', event)" aria-label="What is environment reset?">?</button>
-          <div class="sd-dot">✓</div>
-        </div>
+
       </div>
     </div>
 
@@ -285,15 +295,43 @@
 
 <script>
 const TODAY = new Date().toDateString();
-const KEY = 'adhd_v5';
+const KEY = 'adhd_v6';
+
+// Brain reset prompts clear at 9pm the NEXT day
+function getBrPromptDate() {
+  const now = new Date();
+  // if before 9pm, expiry is yesterday's date string (meaning: keep until 9pm today)
+  // logic: prompts written last night should expire at 9pm today
+  const expiry = new Date(now);
+  if (now.getHours() < 21) {
+    // before 9pm — compare against yesterday
+    expiry.setDate(expiry.getDate() - 1);
+  }
+  return expiry.toDateString();
+}
 
 function getState() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || '{}');
-    if (s.date !== TODAY) return { date:TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:s.notes||'', brPrompts:{} };
-    if (!s.brPrompts) s.brPrompts = {};
+    const fresh = { date:TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:s.notes||'', brPrompts:s.brPrompts||{}, brPromptDate:s.brPromptDate||TODAY };
+
+    if (s.date !== TODAY) {
+      // new day — reset everything except notes and brPrompts (keep until 9pm)
+      fresh.brPrompts = s.brPrompts || {};
+      fresh.brPromptDate = s.brPromptDate || s.date || TODAY;
+      return fresh;
+    }
+
+    // Check if brPrompts should be cleared (past 9pm on the day after they were written)
+    if (s.brPromptDate && s.brPromptDate !== getBrPromptDate() && new Date().getHours() >= 21) {
+      s.brPrompts = {};
+      s.brPromptDate = TODAY;
+    }
+
     return s;
-  } catch { return { date:TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:'', brPrompts:{} }; }
+  } catch {
+    return { date:TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:'', brPrompts:{}, brPromptDate:TODAY };
+  }
 }
 function persist(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e){} }
 
@@ -306,7 +344,7 @@ function toggleSD(k)    { const s=getState(); s.sd[k]=!s.sd[k];         persist(
 
 function save() {
   const s=getState();
-  s.br = document.getElementById('br-input').value;
+  s.br  = document.getElementById('br-input').value;
   s.mit = document.getElementById('mit').value;
   s.tasks = { 2: document.getElementById('t2').value, 3: document.getElementById('t3').value };
   persist(s); updateProgress(s);
@@ -317,6 +355,7 @@ function saveBrPrompt(key) {
   if (!el) return;
   const s = getState();
   s.brPrompts[key] = el.value;
+  s.brPromptDate = TODAY;
   persist(s);
 }
 
@@ -329,8 +368,8 @@ function markBrainResetDone() {
 }
 
 function resetDay() {
-  const notes = getState().notes||'';
-  persist({ date:TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes, brPrompts:{} });
+  const s = getState();
+  persist({ date:TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:s.notes||'', brPrompts:s.brPrompts||{}, brPromptDate:s.brPromptDate||TODAY });
   render(getState());
   ['br-input','mit','t2','t3'].forEach(id => document.getElementById(id).value='');
 }
@@ -356,16 +395,16 @@ function render(s) {
 }
 
 function updateProgress(s) {
-  const checks = [s.habits.sleep,s.habits.exercise,s.habits.water,s.brDone,s.mitDone,s.taskDone[2],s.taskDone[3],s.dw[1],s.dw[2],s.sd.plan,s.sd.brain,s.sd.env];
+  const checks = [s.habits.sleep,s.habits.exercise,s.habits.water,s.brDone,s.mitDone,s.taskDone[2],s.taskDone[3],s.dw[1],s.dw[2],s.sd.env,s.sd.brain,s.sd.plan];
   document.getElementById('progress').style.width = Math.round(checks.filter(Boolean).length/checks.length*100)+'%';
 }
 
 const BRAIN_PROMPTS = [
-  { key:'loops',  icon:'ti-infinity',      label:'Open loops',         placeholder:'What\'s still unfinished or nagging at you?',          hint:'Get it out of your head and onto the page.' },
-  { key:'worry',  icon:'ti-alert-circle',  label:'Worries',            placeholder:'Anything you\'re anxious about forgetting?',           hint:'Writing it down means your brain can let go.' },
-  { key:'wins',   icon:'ti-trophy',        label:'Wins today',         placeholder:'What did you actually get done?',                      hint:'Even small things count.' },
-  { key:'tmit',   icon:'ti-bolt',          label:'Tomorrow\'s MIT',    placeholder:'What\'s the one thing that matters most tomorrow?',    hint:'Set it now so you start with clarity.' },
-  { key:'other',  icon:'ti-brain',         label:'Anything else',      placeholder:'Stray thoughts, ideas, things to remember…',          hint:'Clear the buffer.' },
+  { key:'loops', icon:'ti-infinity',     label:'Open loops',      placeholder:'What\'s still unfinished or nagging at you?',       hint:'Get it out of your head and onto the page.' },
+  { key:'worry', icon:'ti-alert-circle', label:'Worries',         placeholder:'Anything you\'re anxious about forgetting?',        hint:'Writing it down means your brain can let go.' },
+  { key:'wins',  icon:'ti-trophy',       label:'Wins today',      placeholder:'What did you actually get done?',                   hint:'Even small things count.' },
+  { key:'tmit',  icon:'ti-bolt',         label:'Tomorrow\'s MIT', placeholder:'What\'s the one thing that matters most tomorrow?', hint:'Set it now so you start with clarity.' },
+  { key:'other', icon:'ti-brain',        label:'Anything else',   placeholder:'Stray thoughts, ideas, things to remember…',       hint:'Clear the buffer.' },
 ];
 
 function buildBrainReset() {
@@ -377,7 +416,6 @@ function buildBrainReset() {
       <textarea class="prompt-ta" id="bp-${p.key}" placeholder="${p.placeholder}" oninput="saveBrPrompt('${p.key}')">${s.brPrompts[p.key]||''}</textarea>
       <div class="prompt-hint">${p.hint}</div>
     </div>`).join('');
-
   return rows + `
     <div class="mark-done-row">
       <button class="mark-done-btn${done?' done':''}" id="br-done-btn" onclick="markBrainResetDone()">
@@ -390,7 +428,7 @@ function openDrawer(type, e) {
   if (e) e.stopPropagation();
   if (type === 'brain-reset') {
     document.getElementById('drawer-title').textContent = '🧠 Brain reset';
-    document.getElementById('drawer-subtitle').textContent = 'Work through these before you shut down';
+    document.getElementById('drawer-subtitle').textContent = 'Clears at 9pm tomorrow — use it to set up your day';
     document.getElementById('drawer-body').innerHTML = buildBrainReset();
   } else if (type === 'water') {
     document.getElementById('drawer-title').textContent = 'Water tracker';
@@ -431,19 +469,18 @@ function buildNotes(){const s=getState(),notes=s.notes||'';return`<textarea clas
 function saveNotes(){const ta=document.getElementById('notes-ta');if(!ta)return;const s=getState();s.notes=ta.value;persist(s);const c=document.getElementById('notes-count');if(c)c.textContent=ta.value.length+' chars';}
 
 const ENV_HELP = {
-  title:'Environment reset (5 min)',
-  desc:'A quick tidy that makes tomorrow\'s you feel like they\'re starting from a good place, not digging out.',
-  items:['Fill water bottle','Put things back where they belong','Put tomorrow\'s essentials somewhere obvious','Remove one distraction','Make tomorrow\'s first task easy to start']
+  title: '🌱 Environment reset (5 min)',
+  desc: 'A quick tidy that makes tomorrow\'s you feel like they\'re starting from a good place, not digging out.',
+  items: ['Fill water bottle','Put things back where they belong','Put tomorrow\'s essentials somewhere obvious','Remove one distraction','Make tomorrow\'s first task easy to start']
 };
-function openHelp(type,e){
+function openHelp(type,e) {
   e.stopPropagation();
-  const c=ENV_HELP;
-  document.getElementById('popup-title').textContent=c.title;
-  document.getElementById('popup-desc').textContent=c.desc;
-  document.getElementById('popup-list').innerHTML=c.items.map(i=>`<li>${i}</li>`).join('');
+  document.getElementById('popup-title').textContent = ENV_HELP.title;
+  document.getElementById('popup-desc').textContent  = ENV_HELP.desc;
+  document.getElementById('popup-list').innerHTML    = ENV_HELP.items.map(i=>`<li>${i}</li>`).join('');
   document.getElementById('popup-back').classList.add('open');
 }
-function closeHelp(){document.getElementById('popup-back').classList.remove('open');}
+function closeHelp() { document.getElementById('popup-back').classList.remove('open'); }
 
 const DAYS=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
