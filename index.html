@@ -425,7 +425,7 @@
 
     <!-- PROGRESS -->
     <div class="progress-wrap">
-      <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
+      <div class="progress-bar"><div class="progress-fill" id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="12" style="width:0%"></div></div>
       <div class="progress-label" id="progress-label">0 of 12 done</div>
     </div>
 
@@ -584,19 +584,21 @@ function getBrPromptDate() {
 
 function getState() {
   try {
+    const today = getToday();
     const s = JSON.parse(localStorage.getItem(KEY) || '{}');
-    if (s.date !== getToday()) {
+    if (s.date !== today) {
       // new day — keep notes and brPrompts (brPrompts have their own 9pm expiry below), reset everything else
-      return { date: getToday(), habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || getToday() };
+      return { date: today, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || today };
     }
     // brain reset prompts expire at 9pm the day after they were written
-    if (s.brPromptDate && s.brPromptDate !== getBrPromptDate() && s.brPromptDate !== getToday()) {
+    if (s.brPromptDate && s.brPromptDate !== getBrPromptDate() && s.brPromptDate !== today) {
       s.brPrompts = {};
-      s.brPromptDate = getToday();
+      s.brPromptDate = today;
     }
     return s;
   } catch {
-    return { date: getToday(), habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:'', brPrompts:{}, brPromptDate: getToday() };
+    const today = getToday();
+    return { date: today, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:'', brPrompts:{}, brPromptDate: today };
   }
 }
 function persist(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage full or unavailable — UI stays in sync for this session */ } }
@@ -610,7 +612,7 @@ function toggleBlock(n) { const s=getState(); s.dw[n]=!s.dw[n];         persist(
 function toggleSD(k)    { const s=getState(); s.sd[k]=!s.sd[k];         persist(s); render(s); }
 
 /* ── TEXT SAVE ─────────────────────────────────────────────────── */
-let _saveTimer;
+let _saveTimer, _notesSaveTimer, _brSaveTimer;
 function save() { clearTimeout(_saveTimer); _saveTimer = setTimeout(saveNow, 300); }
 function saveNow() {
   const s = getState();
@@ -624,16 +626,27 @@ function saveNow() {
   updateProgress(s);
 }
 // Flush any pending save before the page unloads.
-window.addEventListener('beforeunload', saveNow);
+window.addEventListener('beforeunload', () => { saveNow(); if (typeof saveNotesNow==='function') saveNotesNow(); if (typeof flushBrPrompts==='function') flushBrPrompts(); });
 
 /* ── BRAIN RESET JOURNAL ───────────────────────────────────────── */
 function saveBrPrompt(key) {
-  const el = document.getElementById('bp-'+key);
-  if (!el) return;
+  clearTimeout(_brSaveTimer);
+  _brSaveTimer = setTimeout(() => flushBrPrompts(), 300);
+}
+function flushBrPrompts() {
   const s = getState();
-  s.brPrompts[key] = el.value;
-  s.brPromptDate = getToday();
-  persist(s);
+  let changed = false;
+  BRAIN_PROMPTS.forEach(p => {
+    const el = document.getElementById('bp-'+p.key);
+    if (el && s.brPrompts[p.key] !== el.value) {
+      s.brPrompts[p.key] = el.value;
+      changed = true;
+    }
+  });
+  if (changed && s.brPromptDate !== getToday()) {
+    s.brPromptDate = getToday();
+  }
+  if (changed) persist(s);
 }
 function markBrainResetDone() {
   const s = getState();
@@ -673,7 +686,7 @@ function render(s) {
     document.getElementById('t'+n+'c').classList.toggle('done', !!s.taskDone[n]);
     const inp = document.getElementById('t'+n);
     if (s.tasks && s.tasks[n] && !inp.value) inp.value = s.tasks[n];
-    inp.closest('.task-row').classList.toggle('done-state', !!s.taskDone[n]);
+    inp.closest('.task-row')?.classList.toggle('done-state', !!s.taskDone[n]);
   });
   // deep work
   [1,2].forEach(n => document.getElementById('dw-'+n).classList.toggle('done', !!s.dw[n]));
@@ -693,7 +706,9 @@ function updateProgress(s) {
   ];
   const done  = checks.filter(Boolean).length;
   const total = checks.length;
-  document.getElementById('progress').style.width = Math.round(done / total * 100) + '%';
+  const progEl = document.getElementById('progress');
+  progEl.style.width = Math.round(done / total * 100) + '%';
+  progEl.setAttribute('aria-valuenow', done);
   document.getElementById('progress-label').textContent = done + ' of ' + total + ' done';
 }
 
@@ -741,6 +756,9 @@ function openDrawer(type, e) {
   document.getElementById('drawer').classList.add('open');
 }
 function closeDrawer() {
+  // Flush any pending text saves before closing the drawer.
+  clearTimeout(_notesSaveTimer); saveNotesNow();
+  clearTimeout(_brSaveTimer);   flushBrPrompts();
   document.getElementById('overlay').classList.remove('open');
   document.getElementById('drawer').classList.remove('open');
 }
@@ -811,6 +829,10 @@ function buildNotes() {
     <div class="notes-meta" id="notes-meta">${notes.length} chars · carries over day to day</div>`;
 }
 function saveNotes() {
+  clearTimeout(_notesSaveTimer);
+  _notesSaveTimer = setTimeout(saveNotesNow, 300);
+}
+function saveNotesNow() {
   const ta = document.getElementById('notes-ta');
   if (!ta) return;
   const s = getState();
@@ -866,6 +888,10 @@ function closeHelp() { document.getElementById('popup-back').classList.remove('o
 	      const s = JSON.parse(raw);
 	      if (s.date && s.date !== getToday()) {
 	        render(getState());
+	        ['br-input','mit','t2','t3'].forEach(id => {
+	          const el = document.getElementById(id);
+	          if (el) el.value = '';
+	        });
 	      }
 	    }
 	  } catch {}
