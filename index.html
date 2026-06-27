@@ -589,7 +589,7 @@ function getState() {
       return { date: getToday(), habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || getToday() };
     }
     // brain reset prompts expire at 9pm the day after they were written
-    if (s.brPromptDate && s.brPromptDate !== getBrPromptDate() && new Date().getHours() >= 21) {
+    if (s.brPromptDate && s.brPromptDate !== getBrPromptDate() && s.brPromptDate !== getToday()) {
       s.brPrompts = {};
       s.brPromptDate = getToday();
     }
@@ -598,7 +598,7 @@ function getState() {
     return { date: getToday(), habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:'', brPrompts:{}, brPromptDate: getToday() };
   }
 }
-function persist(s) { localStorage.setItem(KEY, JSON.stringify(s)); }
+function persist(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage full or unavailable — UI stays in sync for this session */ } }
 
 /* ── TOGGLES ───────────────────────────────────────────────────── */
 function toggleHabit(k) { const s=getState(); s.habits[k]=!s.habits[k]; persist(s); render(s); }
