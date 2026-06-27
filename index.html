@@ -586,8 +586,10 @@ function getState() {
   try {
     const today = getToday();
     const s = JSON.parse(localStorage.getItem(KEY) || '{}');
-    if (s.date !== today) {
-      // new day — keep notes and brPrompts (brPrompts have their own 9pm expiry below), reset everything else
+    if (s.date !== today || s.taskDone === undefined) {
+      // new day, OR a stale pre-update schema from earlier today (missing
+      // taskDone means it predates the Ball Roller/MIT/tasks rewrite) —
+      // keep notes and brPrompts (brPrompts have their own 9pm expiry below), reset everything else
       return { date: today, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || today };
     }
     // brain reset prompts expire at 9pm the day after they were written
@@ -867,43 +869,43 @@ function openHelp(type, e) {
 function closeHelp() { document.getElementById('popup-back').classList.remove('open'); }
 
 /* ── INIT ── ─────────────────────────────────────── */
-	const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-	const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-	function updateDateLabel() {
-	  const now = new Date();
-	  document.getElementById('date-label').textContent =
-	    DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate();
-	}
-	updateDateLabel();
+function updateDateLabel() {
+  const now = new Date();
+  document.getElementById('date-label').textContent =
+    DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate();
+}
+updateDateLabel();
 
-	/* ── DAY-ROLLOVER DETECTION ───────────────────────────────── */
-	// Re-render if the day changed while the page was open (common for
-	// PWAs kept on the home screen past midnight).
-	function checkDayRollover() {
-	  updateDateLabel();
-	  try {
-	    const raw = localStorage.getItem(KEY);
-	    if (raw) {
-	      const s = JSON.parse(raw);
-	      if (s.date && s.date !== getToday()) {
-	        render(getState());
-	        ['br-input','mit','t2','t3'].forEach(id => {
-	          const el = document.getElementById(id);
-	          if (el) el.value = '';
-	        });
-	      }
-	    }
-	  } catch {}
-	}
-	// Fire when the user switches back to this tab / PWA.
-	document.addEventListener('visibilitychange', () => {
-	  if (!document.hidden) checkDayRollover();
-	});
-	// Also poll gently — catches midnight while the page is open & visible.
-	setInterval(checkDayRollover, 60_000);
+/* ── DAY-ROLLOVER DETECTION ───────────────────────────────── */
+// Re-render if the day changed while the page was open (common for
+// PWAs kept on the home screen past midnight).
+function checkDayRollover() {
+  updateDateLabel();
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.date && s.date !== getToday()) {
+        render(getState());
+        ['br-input','mit','t2','t3'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.value = '';
+        });
+      }
+    }
+  } catch {}
+}
+// Fire when the user switches back to this tab / PWA.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) checkDayRollover();
+});
+// Also poll gently — catches midnight while the page is open & visible.
+setInterval(checkDayRollover, 60_000);
 
-	render(getState());
+render(getState());
 /* ── SERVICE WORKER ────────────────────────────────────────────── */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
