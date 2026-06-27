@@ -426,7 +426,7 @@
     <!-- PROGRESS -->
     <div class="progress-wrap">
       <div class="progress-bar"><div class="progress-fill" id="progress" style="width:0%"></div></div>
-      <div class="progress-label" id="progress-label">0 of 11 done</div>
+      <div class="progress-label" id="progress-label">0 of 12 done</div>
     </div>
 
     <!-- HABITS -->
@@ -569,7 +569,7 @@
 
 <script>
 /* ── STATE ─────────────────────────────────────────────────────── */
-const TODAY = new Date().toDateString();
+function getToday() { return new Date().toDateString(); }
 const KEY   = 'adhd_dashboard_v1';
 
 // Brain reset journal prompts clear at 9pm the day AFTER they're written,
@@ -585,18 +585,18 @@ function getBrPromptDate() {
 function getState() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || '{}');
-    if (s.date !== TODAY) {
+    if (s.date !== getToday()) {
       // new day — keep notes and brPrompts (brPrompts have their own 9pm expiry below), reset everything else
-      return { date: TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || TODAY };
+      return { date: getToday(), habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || getToday() };
     }
     // brain reset prompts expire at 9pm the day after they were written
     if (s.brPromptDate && s.brPromptDate !== getBrPromptDate() && new Date().getHours() >= 21) {
       s.brPrompts = {};
-      s.brPromptDate = TODAY;
+      s.brPromptDate = getToday();
     }
     return s;
   } catch {
-    return { date: TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:'', brPrompts:{}, brPromptDate: TODAY };
+    return { date: getToday(), habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes:'', brPrompts:{}, brPromptDate: getToday() };
   }
 }
 function persist(s) { localStorage.setItem(KEY, JSON.stringify(s)); }
@@ -628,7 +628,7 @@ function saveBrPrompt(key) {
   if (!el) return;
   const s = getState();
   s.brPrompts[key] = el.value;
-  s.brPromptDate = TODAY;
+  s.brPromptDate = getToday();
   persist(s);
 }
 function markBrainResetDone() {
@@ -643,7 +643,7 @@ function markBrainResetDone() {
 function resetDay() {
   if (!confirm('Reset today? Your notes will be kept.')) return;
   const s = getState();
-  persist({ date: TODAY, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || TODAY });
+  persist({ date: getToday(), habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || getToday() });
   render(getState());
   ['br-input','mit','t2','t3'].forEach(id => { document.getElementById(id).value = ''; });
 }
@@ -841,15 +841,40 @@ function openHelp(type, e) {
 }
 function closeHelp() { document.getElementById('popup-back').classList.remove('open'); }
 
-/* ── INIT ──────────────────────────────────────────────────────── */
-const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-const _now   = new Date();
-document.getElementById('date-label').textContent =
-  DAYS[_now.getDay()] + ', ' + MONTHS[_now.getMonth()] + ' ' + _now.getDate();
+/* ── INIT ── ─────────────────────────────────────── */
+	const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+	const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-render(getState());
+	function updateDateLabel() {
+	  const now = new Date();
+	  document.getElementById('date-label').textContent =
+	    DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate();
+	}
+	updateDateLabel();
 
+	/* ── DAY-ROLLOVER DETECTION ───────────────────────────────── */
+	// Re-render if the day changed while the page was open (common for
+	// PWAs kept on the home screen past midnight).
+	function checkDayRollover() {
+	  updateDateLabel();
+	  try {
+	    const raw = localStorage.getItem(KEY);
+	    if (raw) {
+	      const s = JSON.parse(raw);
+	      if (s.date && s.date !== getToday()) {
+	        render(getState());
+	      }
+	    }
+	  } catch {}
+	}
+	// Fire when the user switches back to this tab / PWA.
+	document.addEventListener('visibilitychange', () => {
+	  if (!document.hidden) checkDayRollover();
+	});
+	// Also poll gently — catches midnight while the page is open & visible.
+	setInterval(checkDayRollover, 60_000);
+
+	render(getState());
 /* ── SERVICE WORKER ────────────────────────────────────────────── */
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
