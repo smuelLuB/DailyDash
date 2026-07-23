@@ -155,8 +155,30 @@ self.addEventListener('message', (event) => {
   }
 });
 
-/* ── FETCH — cache-first ─────────────────────────────────────────── */
+/* ── FETCH ──────────────────────────────────────────────────────── */
+// Network-first for navigation (HTML pages) so deploys take effect
+// immediately — no cache-version bump needed for content changes.
+// Cache-first for everything else (static assets, CDN) for speed +
+// offline resilience.
 self.addEventListener('fetch', (event) => {
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).then((response) => {
+        if (response && response.status === 200) {
+          const toCache = response.clone();
+          caches.open(CACHE_NAME).then((c) => c.put(event.request, toCache)).catch(() => {});
+        }
+        return response;
+      }).catch(() =>
+        caches.match(event.request).then((cached) =>
+          cached || new Response('Offline', { status: 503 })
+        )
+      )
+    );
+    return;
+  }
+
+  // Cache-first for static assets
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
