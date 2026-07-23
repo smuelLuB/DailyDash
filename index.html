@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' https://cdn.jsdelivr.net; script-src 'self' 'unsafe-inline'; connect-src 'self'; img-src 'self' data:; manifest-src 'self';" />
+  <meta name="theme-color" content="#f8f8f7" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#1a1a18" media="(prefers-color-scheme: dark)" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Dashboard" />
+  <title>Daily Dashboard</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.9.0/dist/tabler-icons.min.css"
+        integrity="sha384-QvR1GM9u92ZefTDtJJHYYhMpBNVcTCxfWikeZRuqdGO3n81PA6sjSDn6GjBQ07rh"
+        crossorigin="anonymous" />
+  <style>
+    /* ── DESIGN TOKENS ───────────────────────────────────────────── */
+    :root {
+      /* backgrounds */
+      --bg:        #f8f8f7;
+      --surface:   #ffffff;
+      --surface-2: #f2f2f0;
+      /* borders */
+      --border:        rgba(0,0,0,0.09);
+      --border-strong: rgba(0,0,0,0.18);
+      /* text */
+      --text:           #1a1a18;
+      --text-secondary: #5a5a57;
+      --text-muted:     #9a9a96;
+      /* accent – blue */
+      --accent:        #185FA5;
+      --accent-bg:     #E6F1FB;
+      --accent-border: #B5D4F4;
+      --accent-text:   #0d3d6e;
+      /* success – green */
+      --success:        #0F6E56;
+      --success-bg:     #E1F5EE;
+      --success-border: #9FE1CB;
+      /* warning – amber */
+      --warning:        #854F0B;
+      --warning-bg:     #FAEEDA;
+      --warning-border: #FAC775;
+      /* misc */
+      --radius: 12px;
+      --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg:        #1a1a18;
+        --surface:   #242422;
+        --surface-2: #2e2e2c;
+        --border:        rgba(255,255,255,0.09);
+        --border-strong: rgba(255,255,255,0.18);
+        --text:           #f0f0ee;
+        --text-secondary: #a8a8a4;
+        --text-muted:     #6a6a66;
+        --accent:        #378ADD;
+        --accent-bg:     #0c2a44;
+        --accent-border: #1a4f80;
+        --accent-text:   #7bbdf5;
+        --success:        #1D9E75;
+        --success-bg:     #062820;
+        --success-border: #0F6E56;
+        --warning:        #EF9F27;
+        --warning-bg:     #2a1a04;
+        --warning-border: #854F0B;
+      }
+    }
+
+    /* ── RESET ───────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overflow-x: hidden; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.5;
+      overscroll-behavior: none;
+    }
+
+    /* ── LAYOUT ──────────────────────────────────────────────────── */
+    .app  { min-height: 100dvh; padding-top: env(safe-area-inset-top, 0); }
+    .dash { max-width: 480px; margin: 0 auto; padding: 1.5rem 1rem calc(env(safe-area-inset-bottom,0) + 4rem); }
+
+    /* ── TOP BAR ─────────────────────────────────────────────────── */
+    .top-bar     { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.75rem; }
+    .date-label  { font-size: 11px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+    .today-label { font-size: 30px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; }
+    .icon-row    { display: flex; gap: 8px; padding-top: 6px; }
+    .icon-btn    {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 20px; color: var(--text-secondary);
+    }
+    .icon-btn:active { background: var(--surface-2); }
+
+    /* ── PROGRESS ────────────────────────────────────────────────── */
+    .progress-wrap  { margin-bottom: 2rem; }
+    .progress-bar   { height: 3px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 6px; }
+    .progress-fill  { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.4s ease; }
+    .progress-label { font-size: 12px; color: var(--text-muted); }
+
+    /* ── SECTIONS ────────────────────────────────────────────────── */
+    .section       { margin-bottom: 2rem; }
+    .section-title {
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-bottom: 0.75rem; padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── HABITS ──────────────────────────────────────────────────── */
+    .habits-title { display: flex; align-items: center; justify-content: space-between; }
+    .streak-badge {
+      display: flex; align-items: center; gap: 4px;
+      font-size: 11px; font-weight: 700; color: var(--success);
+      background: var(--success-bg); border: 1px solid var(--success-border);
+      border-radius: 6px; padding: 2px 7px;
+      text-transform: none; letter-spacing: normal;
+    }
+    .streak-badge i { font-size: 13px; }
+    .streak-badge.zero {
+      opacity: 0.45; color: var(--text-muted);
+      background: var(--surface-2); border-color: var(--border);
+    }
+    .habits     { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .habit-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 8px; min-height: 92px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      cursor: pointer; user-select: none; transition: transform 0.12s, background 0.15s, border-color 0.15s;
+    }
+    .habit-card:active { transform: scale(0.96); }
+    .habit-card.done { background: var(--success-bg); border-color: var(--success-border); }
+    .habit-card.done .habit-icon,
+    .habit-card.done .habit-name,
+    .habit-card.done .habit-sub { color: var(--success); }
+    .habit-icon  { font-size: 24px; color: var(--text-secondary); }
+    .habit-name  { font-size: 13px; font-weight: 600; color: var(--text); text-align: center; }
+    .habit-sub   { font-size: 11px; color: var(--text-muted); text-align: center; }
+    .check-circle {
+      width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+      display: flex; align-items: center; justify-content: center; font-size: 10px; color: transparent;
+    }
+    .habit-card.done .check-circle { background: var(--success); border-color: var(--success); color: #fff; }
+
+    /* ── BALL ROLLER ─────────────────────────────────────────────── */
+    .br-box {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .br-box.done-state { background: var(--accent-bg); border-color: var(--accent-border); }
+    .br-box.done-state .br-input { text-decoration: line-through; opacity: 0.5; }
+    .br-left  { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+    .br-badge {
+      font-size: 11px; font-weight: 700; color: var(--accent);
+      background: var(--accent-bg); border: 1px solid var(--accent-border);
+      border-radius: 6px; padding: 3px 7px; white-space: nowrap;
+    }
+    .br-sub   { font-size: 11px; color: var(--text-muted); }
+    .br-input {
+      flex: 1; background: transparent; border: none;
+      font-size: 16px; color: var(--text); outline: none; font-family: var(--font);
+    }
+    .br-input::placeholder { color: var(--text-muted); }
+    .br-check {
+      width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+      background: transparent; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: transparent; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+    }
+    .br-check.done { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* ── TASKS (MIT + 2 more) ────────────────────────────────────── */
+    .tasks-list { display: flex; flex-direction: column; gap: 10px; }
+    .task-row   { display: flex; align-items: center; gap: 12px; }
+    .task-num   { font-size: 14px; font-weight: 600; color: var(--text-muted); width: 18px; flex-shrink: 0; }
+    .task-input {
+      flex: 1; background: transparent; border: none;
+      border-bottom: 1px solid var(--border); padding: 8px 0;
+      font-size: 16px; color: var(--text); outline: none; font-family: var(--font);
+    }
+    .task-input::placeholder { color: var(--text-muted); }
+    .task-input:focus        { border-bottom-color: var(--accent); }
+    .task-check {
+      width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+      background: transparent; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: transparent; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+    }
+    .task-check.done { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .task-row.done-state .task-input { text-decoration: line-through; opacity: 0.5; }
+
+    /* ── MIT ─────────────────────────────────────────────────────── */
+    .mit-row   {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 16px; display: flex; align-items: center; gap: 12px;
+    }
+    .mit-row.done-state { background: var(--warning-bg); border-color: var(--warning-border); }
+    .mit-row.done-state .mit-input { text-decoration: line-through; opacity: 0.5; }
+    .mit-badge {
+      font-size: 11px; font-weight: 700; color: var(--warning);
+      background: var(--warning-bg); border: 1px solid var(--warning-border);
+      border-radius: 6px; padding: 3px 7px; white-space: nowrap; flex-shrink: 0;
+    }
+    .mit-input {
+      flex: 1; background: transparent; border: none;
+      font-size: 16px; font-weight: 600; color: var(--text);
+      outline: none; font-family: var(--font);
+    }
+    .mit-input::placeholder { color: var(--text-muted); font-weight: 400; }
+    .mit-check {
+      width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+      background: transparent; display: flex; align-items: center; justify-content: center;
+      font-size: 12px; color: transparent; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+    }
+    .mit-check.done { background: var(--warning); border-color: var(--warning); color: #fff; }
+
+    /* ── DEEP WORK ───────────────────────────────────────────────── */
+    .deep-work  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .block-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px; display: flex; align-items: center; gap: 10px;
+      cursor: pointer; user-select: none; transition: transform 0.12s, background 0.15s, border-color 0.15s;
+    }
+    .block-card:active { transform: scale(0.96); }
+    .block-card.done   { background: var(--accent-bg); border-color: var(--accent-border); }
+    .block-card .bi    { font-size: 20px; color: var(--text-secondary); flex-shrink: 0; }
+    .block-card.done .bi { color: var(--accent); }
+    .block-info  { flex: 1; min-width: 0; }
+    .block-name-input {
+      background: transparent; border: none; outline: none; padding: 0;
+      font: inherit; font-size: 13px; font-weight: 600; color: var(--text);
+      width: 100%; font-family: var(--font);
+    }
+    .block-name-input::placeholder { color: var(--text-muted); font-weight: 600; opacity: 1; }
+    .block-card.done .block-name-input { color: var(--accent); }
+    .block-card.done .block-name-input::placeholder { color: var(--accent); opacity: 0.7; }
+    .block-name  { font-size: 13px; font-weight: 600; color: var(--text); }
+    .block-card.done .block-name { color: var(--accent); }
+    .dw-note-btn {
+      background: none; border: none; padding: 4px; margin: 0; cursor: pointer;
+      color: var(--text-secondary); flex-shrink: 0; display: flex; align-items: center;
+      border-radius: 6px;
+    }
+    .dw-note-btn i     { font-size: 15px; }
+    .dw-note-btn:active { background: var(--surface-2); }
+    .dw-note-btn.has-note { color: var(--accent); }
+    .block-sub   { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .block-dot   {
+      width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: transparent; flex-shrink: 0; margin-left: auto;
+    }
+    .block-card.done .block-dot { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* ── SHUTDOWN ────────────────────────────────────────────────── */
+    .shutdown-list { display: flex; flex-direction: column; gap: 10px; }
+    .sd-row {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 16px; cursor: pointer; user-select: none;
+      transition: transform 0.12s, background 0.15s, border-color 0.15s;
+    }
+    .sd-row:active { transform: scale(0.98); }
+    .sd-row.done   { background: var(--warning-bg); border-color: var(--warning-border); }
+    .sd-icon { font-size: 20px; color: var(--text-secondary); flex-shrink: 0; }
+    .sd-row.done .sd-icon { color: var(--warning); }
+    .sd-text { flex: 1; font-size: 15px; color: var(--text); }
+    .sd-row.done .sd-text { color: var(--warning); }
+    .sd-dot  {
+      width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: transparent; flex-shrink: 0;
+    }
+    .sd-row.done .sd-dot { background: var(--warning); border-color: var(--warning); color: #fff; }
+    .help-btn {
+      background: transparent; border: 1px solid var(--border-strong); border-radius: 50%;
+      width: 22px; height: 22px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text-muted); font-size: 12px; font-weight: 700; flex-shrink: 0;
+      font-family: var(--font);
+    }
+    .help-btn:active { background: var(--surface-2); }
+    .journal-btn {
+      display: flex; align-items: center; gap: 5px;
+      background: transparent; border: 1px solid var(--border-strong);
+      border-radius: 8px; padding: 4px 8px;
+      cursor: pointer; color: var(--text-secondary); font-size: 12px; font-weight: 600;
+      font-family: var(--font); white-space: nowrap; flex-shrink: 0;
+    }
+    .journal-btn:active { background: var(--surface-2); }
+    .journal-btn i { font-size: 14px; }
+
+    /* ── RESET BTN ───────────────────────────────────────────────── */
+    .reset-btn {
+      background: transparent; border: none; color: var(--text-muted);
+      font-size: 13px; cursor: pointer; display: block;
+      margin: 1.5rem auto 0; padding: 8px 16px; font-family: var(--font);
+    }
+
+    /* ── OVERLAY ─────────────────────────────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease; z-index: 10;
+    }
+    .overlay.open { opacity: 1; pointer-events: all; }
+
+    /* ── DRAWER ──────────────────────────────────────────────────── */
+    .drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: min(380px, 92vw);
+      background: var(--surface); border-left: 1px solid var(--border);
+      transform: translateX(100%); transition: transform 0.3s ease;
+      z-index: 20; display: flex; flex-direction: column;
+    }
+    .drawer.open { transform: translateX(0); }
+    .drawer-header {
+      display: flex; align-items: center; gap: 12px;
+      padding: calc(1.25rem + env(safe-area-inset-top,0)) 1.25rem 1rem;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .drawer-title { font-size: 17px; font-weight: 600; color: var(--text); flex: 1; }
+    .close-btn {
+      background: var(--surface-2); border: none; border-radius: 50%;
+      width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 18px; color: var(--text-secondary);
+    }
+    .drawer-body { flex: 1; overflow-y: auto; padding: 1.25rem; -webkit-overflow-scrolling: touch; }
+
+    /* ── HELP POPUP (bottom sheet) ───────────────────────────────── */
+    .popup-back {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+      z-index: 30; display: flex; align-items: flex-end; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .popup-back.open { opacity: 1; pointer-events: all; }
+    .popup {
+      background: var(--surface); border-radius: 20px 20px 0 0;
+      padding: 1.5rem 1.5rem calc(1.5rem + env(safe-area-inset-bottom,0));
+      width: 100%; max-height: 82dvh; overflow-y: auto;
+      transform: translateY(24px); transition: transform 0.25s ease;
+    }
+    .popup-back.open .popup { transform: translateY(0); }
+    .popup-pill  { width: 40px; height: 4px; background: var(--border-strong); border-radius: 99px; margin: 0 auto 1.25rem; }
+    .popup-title { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; }
+    .popup-desc  { font-size: 14px; color: var(--text-secondary); line-height: 1.65; margin-bottom: 1.25rem; }
+    .popup-list  { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .popup-list li {
+      display: flex; align-items: flex-start; gap: 12px;
+      font-size: 15px; color: var(--text); line-height: 1.5;
+    }
+    .popup-list li::before {
+      content: '□'; font-size: 17px; color: var(--text-muted); flex-shrink: 0; margin-top: 1px;
+    }
+    .popup-close-btn {
+      display: block; width: 100%; margin-top: 1.5rem; padding: 14px;
+      background: var(--surface-2); border: none; border-radius: var(--radius);
+      font-size: 16px; font-weight: 600; color: var(--text);
+      cursor: pointer; font-family: var(--font);
+    }
+    .popup-close-btn:active { background: var(--border); }
+
+    /* ── WATER (drawer) ──────────────────────────────────────────── */
+    .drawer-section-title {
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.75rem;
+    }
+    .water-display  { display: flex; align-items: baseline; gap: 6px; margin-bottom: 1rem; }
+    .water-num      { font-size: 36px; font-weight: 700; color: var(--text); }
+    .water-goal     { font-size: 13px; color: var(--text-muted); }
+    .water-prog     { height: 5px; background: var(--border); border-radius: 99px; margin-bottom: 1.25rem; overflow: hidden; }
+    .water-prog-fill { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.3s ease; }
+    .water-quick   { margin-bottom: 1rem; }
+    .quick-add-btn {
+      width: 100%; padding: 14px;
+      background: var(--surface-2); border: 2px dashed var(--border-strong); border-radius: var(--radius);
+      font-size: 16px; font-weight: 600; color: var(--text);
+      cursor: pointer; font-family: var(--font); display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .quick-add-btn:active:not(:disabled) { background: var(--accent-bg); border-color: var(--accent-border); }
+    .quick-add-btn.full { background: var(--accent-bg); border-color: var(--accent-border); border-style: solid; color: var(--accent); cursor: default; }
+    .quick-add-btn i    { font-size: 20px; }
+    .water-actions   { display: flex; gap: 8px; }
+    .water-actions input {
+      flex: 1; padding: 11px 12px;
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+      font-size: 16px; color: var(--text); font-family: var(--font); outline: none;
+    }
+    .water-actions input:focus { border-color: var(--accent); }
+    .water-actions button {
+      padding: 11px 14px;
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+      font-size: 14px; font-weight: 600; color: var(--text);
+      cursor: pointer; font-family: var(--font); white-space: nowrap;
+    }
+    .water-actions button:active { background: var(--border); }
+
+    /* ── NOTES (drawer) ──────────────────────────────────────────── */
+    .notes-ta {
+      width: 100%; min-height: 58dvh;
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px; font-size: 16px; line-height: 1.7;
+      color: var(--text); font-family: var(--font); resize: none; outline: none;
+    }
+    .notes-ta:focus  { border-color: var(--accent); }
+    .notes-ta::placeholder { color: var(--text-muted); }
+    .notes-meta { font-size: 12px; color: var(--text-muted); margin-top: 8px; text-align: right; }
+
+    /* ── BRAIN RESET JOURNAL (drawer) ──────────────────────────────── */
+    .prompt-block  { display: flex; flex-direction: column; gap: 6px; margin-bottom: 1.1rem; }
+    .prompt-label  {
+      font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .prompt-label i { font-size: 14px; }
+    .prompt-ta {
+      width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 10px 12px; font-size: 14px; line-height: 1.6; min-height: 72px;
+      color: var(--text); font-family: var(--font); resize: none; outline: none;
+    }
+    .prompt-ta:focus       { border-color: var(--accent); }
+    .prompt-ta::placeholder { color: var(--text-muted); }
+    .prompt-hint { font-size: 11px; color: var(--text-muted); padding-left: 2px; }
+    .mark-done-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 0 4px; border-top: 1px solid var(--border); margin-top: 4px;
+    }
+    .mark-done-btn {
+      flex: 1; background: var(--warning-bg); border: 1px solid var(--warning-border);
+      border-radius: var(--radius); padding: 12px 16px;
+      font-size: 14px; font-weight: 600; color: var(--warning);
+      cursor: pointer; font-family: var(--font);
+    }
+    .mark-done-btn.done { background: var(--warning); border-color: var(--warning); color: #fff; }
+
+    /* ── JOURNAL HISTORY (drawer) ─────────────────────────────────── */
+    .history-section { margin-top: 1.25rem; border-top: 1px solid var(--border); padding-top: 14px; }
+    .history-entry {
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px;
+    }
+    .history-date  { font-size: 13px; font-weight: 600; color: var(--text-secondary); cursor: pointer; }
+    .history-field { margin-top: 10px; }
+    .history-label {
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .history-label i { font-size: 12px; }
+    .history-text  { font-size: 13px; color: var(--text); line-height: 1.5; white-space: pre-wrap; margin-top: 2px; }
+    .export-row { display: flex; gap: 10px; margin-top: 14px; }
+    .export-btn {
+      flex: 1; background: var(--surface-2); border: 1px solid var(--border-strong);
+      border-radius: var(--radius); padding: 12px 10px; min-height: 44px;
+      font-size: 13px; font-weight: 600; color: var(--text-secondary);
+      cursor: pointer; font-family: var(--font);
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .export-btn:active { background: var(--border); }
+    .export-hint { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 8px; }
+
+    /* ── SETTINGS (drawer) ────────────────────────────────────────── */
+    .settings-row {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--surface-2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px 16px;
+    }
+    .settings-info { flex: 1; }
+    .settings-label { font-size: 15px; font-weight: 600; color: var(--text); }
+    .settings-sub  { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .settings-note {
+      margin-top: 12px; padding: 12px 14px; border-radius: 10px;
+      font-size: 13px; line-height: 1.55; display: flex; align-items: flex-start; gap: 8px;
+    }
+    .settings-note i { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+    .settings-note.warn { background: var(--warning-bg); border: 1px solid var(--warning-border); color: var(--warning); }
+    .settings-note.ok   { background: var(--success-bg); border: 1px solid var(--success-border); color: var(--success); }
+
+    /* ── TOGGLE SWITCH ────────────────────────────────────────────── */
+    .toggle {
+      position: relative; width: 48px; height: 28px; flex-shrink: 0;
+      background: var(--border); border-radius: 99px; cursor: pointer;
+      transition: background 0.2s ease;
+    }
+    .toggle.on { background: var(--accent); }
+    .toggle::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 22px; height: 22px; background: #fff; border-radius: 50%;
+      transition: transform 0.2s ease;
+    }
+    .toggle.on::after { transform: translateX(20px); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="dash">
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <div>
+        <div class="date-label" id="date-label"></div>
+        <div class="today-label">Today</div>
+      </div>
+      <div class="icon-row">
+        <div class="icon-btn" onclick="openDrawer('water')" aria-label="Water tracker">
+          <i class="ti ti-droplet"></i>
+        </div>
+        <div class="icon-btn" onclick="openDrawer('notes')" aria-label="Brain dump">
+          <i class="ti ti-notes"></i>
+        </div>
+        <div class="icon-btn" onclick="openDrawer('settings')" aria-label="Settings">
+          <i class="ti ti-settings"></i>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROGRESS -->
+    <div class="progress-wrap">
+      <div class="progress-bar"><div class="progress-fill" id="progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="12" style="width:0%"></div></div>
+      <div class="progress-label" id="progress-label">0 of 12 done</div>
+    </div>
+
+    <!-- HABITS -->
+    <div class="section">
+      <div class="section-title habits-title">
+        <span>Habits</span>
+        <span class="streak-badge" id="streak-badge" aria-label="Current habit streak">
+          <i class="ti ti-flame"></i> <span id="streak-count">0</span>
+        </span>
+      </div>
+      <div class="habits">
+        <div class="habit-card" id="hab-sleep" onclick="toggleNested('habits','sleep')">
+          <i class="ti ti-moon habit-icon"></i>
+          <div class="habit-name">Sleep</div>
+          <div class="habit-sub">7–9 hrs</div>
+          <div class="check-circle">✓</div>
+        </div>
+        <div class="habit-card" id="hab-exercise" onclick="toggleNested('habits','exercise')">
+          <i class="ti ti-run habit-icon"></i>
+          <div class="habit-name">Exercise</div>
+          <div class="habit-sub">move</div>
+          <div class="check-circle">✓</div>
+        </div>
+        <div class="habit-card" id="hab-water" onclick="toggleNested('habits','water')">
+          <i class="ti ti-droplet habit-icon"></i>
+          <div class="habit-name">Water</div>
+          <div class="habit-sub">2–3 L</div>
+          <div class="check-circle">✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BALL ROLLER -->
+    <div class="section">
+      <div class="br-box" id="br-box">
+        <div class="br-left">
+          <div class="br-badge">Ball Roller</div>
+          <div class="br-sub">gets the day rolling</div>
+        </div>
+        <input class="br-input" id="br-input" placeholder="What kicks things off?" oninput="save()" />
+        <button class="br-check" id="br-check" onclick="toggleFlat('brDone')" aria-label="Mark done">✓</button>
+      </div>
+    </div>
+
+    <!-- TASKS: MIT + 2 more -->
+    <div class="section">
+      <div class="section-title">Tasks</div>
+      <div class="tasks-list">
+        <div class="mit-row" id="mit-row">
+          <div class="mit-badge">MIT</div>
+          <input class="mit-input" id="mit" placeholder="The one thing that counts" oninput="save()" />
+          <button class="mit-check" id="mit-check" onclick="toggleFlat('mitDone')" aria-label="Mark MIT done">✓</button>
+        </div>
+        <div class="task-row">
+          <div class="task-num">2</div>
+          <input class="task-input" id="t2" placeholder="Second priority" oninput="save()" />
+          <button class="task-check" id="t2c" onclick="toggleNested('taskDone',2)" aria-label="Mark done">✓</button>
+        </div>
+        <div class="task-row">
+          <div class="task-num">3</div>
+          <input class="task-input" id="t3" placeholder="Third priority" oninput="save()" />
+          <button class="task-check" id="t3c" onclick="toggleNested('taskDone',3)" aria-label="Mark done">✓</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEEP WORK -->
+    <div class="section">
+      <div class="section-title">Deep work</div>
+      <div class="deep-work">
+        <div class="block-card" id="dw-1" onclick="toggleNested('dw',1)">
+          <i class="ti ti-brain bi"></i>
+          <div class="block-info">
+            <input class="block-name-input" id="dw-name-1" placeholder="Block 1"
+              oninput="save()" onclick="event.stopPropagation()" />
+            <div class="block-sub">morning</div>
+          </div>
+          <button class="dw-note-btn" id="dw-note-btn-1" onclick="openDrawer('dw-notes', event, 1)" aria-label="Block 1 details">
+            <i class="ti ti-align-left"></i>
+          </button>
+          <div class="block-dot">✓</div>
+        </div>
+        <div class="block-card" id="dw-2" onclick="toggleNested('dw',2)">
+          <i class="ti ti-brain bi"></i>
+          <div class="block-info">
+            <input class="block-name-input" id="dw-name-2" placeholder="Block 2"
+              oninput="save()" onclick="event.stopPropagation()" />
+            <div class="block-sub">afternoon</div>
+          </div>
+          <button class="dw-note-btn" id="dw-note-btn-2" onclick="openDrawer('dw-notes', event, 2)" aria-label="Block 2 details">
+            <i class="ti ti-align-left"></i>
+          </button>
+          <div class="block-dot">✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SHUTDOWN -->
+    <div class="section">
+      <div class="section-title">Shutdown ritual</div>
+      <div class="shutdown-list">
+        <div class="sd-row" id="sd-env" onclick="toggleNested('sd','env')">
+          <i class="ti ti-plant sd-icon"></i>
+          <div class="sd-text">Environment reset</div>
+          <button class="help-btn" onclick="openHelp('env',event)" aria-label="What is environment reset?">?</button>
+          <div class="sd-dot">✓</div>
+        </div>
+        <div class="sd-row" id="sd-brain" onclick="toggleNested('sd','brain')">
+          <i class="ti ti-brain sd-icon"></i>
+          <div class="sd-text">Brain reset</div>
+          <button class="journal-btn" onclick="openDrawer('brain-reset',event)" aria-label="Open brain reset journal">
+            <i class="ti ti-notebook"></i> Journal
+          </button>
+          <div class="sd-dot">✓</div>
+        </div>
+        <div class="sd-row" id="sd-plan" onclick="toggleNested('sd','plan')">
+          <i class="ti ti-calendar-check sd-icon"></i>
+          <div class="sd-text">Tomorrow planned</div>
+          <div class="sd-dot">✓</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="reset-btn" onclick="resetDay()">↺ Reset for new day</button>
+  </div>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+
+<!-- DRAWER -->
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Side panel">
+  <div class="drawer-header">
+    <i class="ti" id="drawer-icon" style="font-size:22px;color:var(--text-secondary)"></i>
+    <div class="drawer-title" id="drawer-title"></div>
+    <button class="close-btn" onclick="closeDrawer()" aria-label="Close">
+      <i class="ti ti-x"></i>
+    </button>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</div>
+
+<!-- HELP BOTTOM SHEET -->
+<div class="popup-back" id="popup-back" onclick="closeHelp()">
+  <div class="popup" onclick="event.stopPropagation()" role="dialog" aria-modal="true">
+    <div class="popup-pill"></div>
+    <div class="popup-title" id="popup-title"></div>
+    <div class="popup-desc"  id="popup-desc"></div>
+    <ul class="popup-list"   id="popup-list"></ul>
+    <button class="popup-close-btn" onclick="closeHelp()">Got it</button>
+  </div>
+</div>
+
+<script>
+/* ── STATE ─────────────────────────────────────────────────────── */
+function getToday() { return new Date().toDateString(); }
+const KEY   = 'adhd_dashboard_v1';
+
+function getState() {
+  try {
+    const today = getToday();
+    const s = JSON.parse(localStorage.getItem(KEY) || '{}');
+    if (s.date !== today || s.taskDone === undefined) {
+      // new day, OR a stale pre-update schema from earlier today (missing
+      // taskDone means it predates the Ball Roller/MIT/tasks rewrite) —
+      // keep notes and brPrompts (brPrompts have their own midnight expiry below).
+      // MIT and Task 2/3 carry over ONLY if they were left unfinished;
+      // anything already marked done clears like everything else.
+      const carryMit = s.mitDone ? '' : (s.mit || '');
+      const carryTasks = {}, carryTaskDone = {};
+      [2, 3].forEach(n => {
+        const wasDone = !!(s.taskDone && s.taskDone[n]);
+        carryTasks[n] = wasDone ? '' : ((s.tasks && s.tasks[n]) || '');
+        carryTaskDone[n] = false;
+      });
+      // Habit streak: increments only on a genuine day rollover (s.date
+      // !== today), never on the same-day schema-migration path above.
+      // Requires ALL THREE habits (sleep, exercise, water) completed on
+      // the day that just ended, AND no gap — s.date must be exactly
+      // yesterday. Any missed day (2+ days since last open) or incomplete
+      // habits resets the streak to 0, since we keep no history beyond
+      // "today's" state to verify a skipped day retroactively.
+      let habitStreak = s.habitStreak || 0;
+      if (s.date && s.date !== today) {
+        const y = new Date(); y.setDate(y.getDate() - 1);
+        const noGap = s.date === y.toDateString();
+        const allHabitsDone = !!(s.habits && s.habits.sleep && s.habits.exercise && s.habits.water);
+        habitStreak = (noGap && allHabitsDone) ? habitStreak + 1 : 0;
+      }
+      return { date: today, habits:{}, br:'', brDone:false, mit: carryMit, mitDone:false, tasks: carryTasks, taskDone: carryTaskDone, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || today, habitStreak, notificationsEnabled: s.notificationsEnabled || false, waterReminderEnabled: s.waterReminderEnabled || false, waterReminderNext: null, shutdownReminderEnabled: s.shutdownReminderEnabled || false, shutdownReminderNext: null };
+    }
+    // brain reset prompts expire at midnight — if the write date isn't today,
+    // archive and clear them
+    if (s.brPromptDate && s.brPromptDate !== today) {
+      archiveBrPrompts(s.brPrompts, s.brPromptDate); // snapshot before the wipe — entries are never silently lost
+      s.brPrompts = {};
+      s.brPromptDate = today;
+    }
+    return s;
+  } catch {
+    const today = getToday();
+    return { date: today, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, water:0, notes:'', brPrompts:{}, brPromptDate: today, habitStreak: 0, notificationsEnabled: false, waterReminderEnabled: false, waterReminderNext: null, shutdownReminderEnabled: false, shutdownReminderNext: null };
+  }
+}
+function persist(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage full or unavailable — UI stays in sync for this session */ } }
+
+/* ── BRAIN RESET JOURNAL LOG ───────────────────────────────────── */
+// Separate key on purpose: the daily state object is rebuilt from scratch
+// in three places (midnight rollover, resetDay, corrupt-JSON fallback) —
+// a permanent log must not ride along with any of them.
+const BRLOG_KEY = 'adhd_dashboard_brlog_v1';
+function getBrLog() {
+  try {
+    const log = JSON.parse(localStorage.getItem(BRLOG_KEY) || '{}');
+    return { entries: Array.isArray(log.entries) ? log.entries : [], lastExport: log.lastExport || null };
+  } catch {
+    return { entries: [], lastExport: null };
+  }
+}
+function persistBrLog(log) { try { localStorage.setItem(BRLOG_KEY, JSON.stringify(log)); } catch { /* storage full or unavailable */ } }
+function escapeHtml(str) {
+  return String(str ?? '').replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+}
+
+// {date, <non-empty prompt fields>} from a prompts object — null if nothing to keep.
+// Readers everywhere treat absent fields as empty (entry[key] || '').
+function promptsToEntry(prompts, date) {
+  if (!date) return null;
+  const entry = { date };
+  let hasText = false;
+  BRAIN_PROMPTS.forEach(p => {
+    const v = ((prompts && prompts[p.key]) || '').trim();
+    if (v) { entry[p.key] = prompts[p.key]; hasText = true; }
+  });
+  return hasText ? entry : null;
+}
+
+// Snapshot prompts into the log under their written date. Replaces any
+// existing entry for that date, so repeated calls before the daily state
+// is persisted stay idempotent.
+function archiveBrPrompts(prompts, date) {
+  const entry = promptsToEntry(prompts, date);
+  if (!entry) return;
+  const log = getBrLog();
+  log.entries = log.entries.filter(e => e.date !== date);
+  log.entries.push(entry);
+  persistBrLog(log);
+}
+
+/* ── TOGGLES ───────────────────────────────────────────────────── */
+function toggleNested(obj, key) { const s=getState(); s[obj][key]=!s[obj][key]; persist(s); render(s); }
+function toggleFlat(key)        { const s=getState(); s[key]=!s[key];           persist(s); render(s); }
+function setDrawerBody(html) { document.getElementById('drawer-body').innerHTML = html; }
+
+/* ── TEXT SAVE ─────────────────────────────────────────────────── */
+let _saveTimer, _notesSaveTimer, _brSaveTimer;
+function save() { clearTimeout(_saveTimer); _saveTimer = setTimeout(saveNow, 300); }
+function saveNow() {
+  const s = getState();
+  s.br  = document.getElementById('br-input').value;
+  s.mit = document.getElementById('mit').value;
+  s.tasks = {
+    2: document.getElementById('t2').value,
+    3: document.getElementById('t3').value,
+  };
+  s.dwLabel = {
+    1: document.getElementById('dw-name-1').value,
+    2: document.getElementById('dw-name-2').value,
+  };
+  persist(s);
+  updateProgress(s);
+}
+// Flush any pending save before the page unloads.
+window.addEventListener('beforeunload', () => { saveNow(); if (typeof saveNotesNow==='function') saveNotesNow(); if (typeof flushBrPrompts==='function') flushBrPrompts(); if (_dwDrawerBlock) saveDwNotesNow(_dwDrawerBlock); });
+
+/* ── BRAIN RESET JOURNAL ───────────────────────────────────────── */
+function saveBrPrompt(key) {
+  clearTimeout(_brSaveTimer);
+  _brSaveTimer = setTimeout(() => flushBrPrompts(), 300);
+}
+function flushBrPrompts() {
+  const s = getState();
+  let changed = false;
+  BRAIN_PROMPTS.forEach(p => {
+    const el = document.getElementById('bp-'+p.key);
+    if (el && s.brPrompts[p.key] !== el.value) {
+      s.brPrompts[p.key] = el.value;
+      changed = true;
+    }
+  });
+  if (changed && s.brPromptDate !== getToday()) {
+    s.brPromptDate = getToday();
+  }
+  if (changed) persist(s);
+}
+function markBrainResetDone() {
+  const s = getState();
+  s.sd.brain = !s.sd.brain;
+  persist(s); render(s);
+  const btn = document.getElementById('br-done-btn');
+  if (btn) btn.className = 'mark-done-btn' + (s.sd.brain ? ' done' : '');
+  closeDrawer();
+}
+
+/* ── JOURNAL EXPORT ────────────────────────────────────────────── */
+// Everything worth backing up: the whole archive plus today's live,
+// not-yet-expired prompts — so an export taken at any moment is complete.
+function exportEntries() {
+  const s = getState();
+  const entries = getBrLog().entries.slice();
+  const live = promptsToEntry(s.brPrompts, s.brPromptDate);
+  if (live) {
+    const i = entries.findIndex(e => e.date === live.date);
+    if (i >= 0) entries[i] = live; else entries.push(live);
+  }
+  return entries;
+}
+function buildJournalMd(entries) {
+  const days = entries.slice().reverse().map(e => {
+    const fields = BRAIN_PROMPTS.filter(p => e[p.key])
+      .map(p => `**${p.label}**\n${e[p.key]}`).join('\n\n');
+    return `## ${e.date}\n\n${fields}`;
+  });
+  return `# Brain Reset Journal\n\n${days.join('\n\n')}\n`;
+}
+function buildJournalJson(entries) {
+  return JSON.stringify({ entries }, null, 2);
+}
+
+// Kept trivially dumb so tests can stub it — all logic lives in exportJournal.
+function downloadFile(name, text, mime) {
+  const a = document.createElement('a');
+  const url = URL.createObjectURL(new Blob([text], { type: mime }));
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function exportJournal(fmt) {
+  const entries = exportEntries();
+  const stamp = new Date().toISOString().slice(0, 10);
+  if (fmt === 'md') downloadFile(`brain-reset-journal-${stamp}.md`, buildJournalMd(entries), 'text/markdown');
+  else              downloadFile(`brain-reset-journal-${stamp}.json`, buildJournalJson(entries), 'application/json');
+  const log = getBrLog();
+  log.lastExport = getToday();
+  persistBrLog(log);
+  const hint = document.getElementById('export-hint');
+  if (hint) hint.textContent = formatLastExport(log.lastExport);
+}
+function formatLastExport(dateStr) {
+  if (!dateStr) return 'Last backup: never';
+  const days = Math.round((new Date(getToday()) - new Date(dateStr)) / 86400000);
+  if (days <= 0) return 'Last backup: today';
+  return `Last backup: ${days} day${days === 1 ? '' : 's'} ago`;
+}
+
+/* ── RESET ─────────────────────────────────────────────────────── */
+function resetDay() {
+  if (!confirm('Reset today? Your notes will be kept.')) return;
+  const s = getState();
+  persist({ date: getToday(), habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || getToday(), habitStreak: s.habitStreak || 0, notificationsEnabled: s.notificationsEnabled || false, waterReminderEnabled: s.waterReminderEnabled || false, waterReminderNext: null, shutdownReminderEnabled: s.shutdownReminderEnabled || false, shutdownReminderNext: null });
+  render(getState());
+  ['br-input','mit','t2','t3','dw-name-1','dw-name-2'].forEach(id => { document.getElementById(id).value = ''; });
+  syncWaterSchedule();
+  syncShutdownSchedule();
+}
+
+/* ── RENDER ────────────────────────────────────────────────────── */
+function render(s) {
+  // habits
+  ['sleep','exercise','water'].forEach(h =>
+    document.getElementById('hab-'+h).classList.toggle('done', !!s.habits[h])
+  );
+  document.getElementById('streak-count').textContent = s.habitStreak || 0;
+  document.getElementById('streak-badge').classList.toggle('zero', !(s.habitStreak > 0));
+  // ball roller
+  if (s.br && !document.getElementById('br-input').value) document.getElementById('br-input').value = s.br;
+  document.getElementById('br-check').classList.toggle('done', !!s.brDone);
+  document.getElementById('br-box').classList.toggle('done-state', !!s.brDone);
+  // MIT
+  const mitEl = document.getElementById('mit');
+  if (s.mit && !mitEl.value) mitEl.value = s.mit;
+  document.getElementById('mit-check').classList.toggle('done', !!s.mitDone);
+  document.getElementById('mit-row').classList.toggle('done-state', !!s.mitDone);
+  // tasks 2 & 3
+  [2,3].forEach(n => {
+    document.getElementById('t'+n+'c').classList.toggle('done', !!s.taskDone[n]);
+    const inp = document.getElementById('t'+n);
+    if (s.tasks && s.tasks[n] && !inp.value) inp.value = s.tasks[n];
+    inp.closest('.task-row')?.classList.toggle('done-state', !!s.taskDone[n]);
+  });
+  // deep work
+  [1,2].forEach(n => {
+    document.getElementById('dw-'+n).classList.toggle('done', !!s.dw[n]);
+    const nameEl = document.getElementById('dw-name-'+n);
+    if (s.dwLabel && s.dwLabel[n] && !nameEl.value) nameEl.value = s.dwLabel[n];
+    const hasNote = !!(s.dwNotes && s.dwNotes[n] && s.dwNotes[n].trim());
+    document.getElementById('dw-note-btn-'+n).classList.toggle('has-note', hasNote);
+  });
+  // shutdown
+  ['env','brain','plan'].forEach(k =>
+    document.getElementById('sd-'+k).classList.toggle('done', !!s.sd[k])
+  );
+  updateProgress(s);
+}
+
+function updateProgress(s) {
+  const checks = [
+    s.habits.sleep, s.habits.exercise, s.habits.water,
+    s.brDone, s.mitDone, s.taskDone[2], s.taskDone[3],
+    s.dw[1], s.dw[2],
+    s.sd.env, s.sd.brain, s.sd.plan,
+  ];
+  const done  = checks.filter(Boolean).length;
+  const total = checks.length;
+  const progEl = document.getElementById('progress');
+  progEl.style.width = Math.round(done / total * 100) + '%';
+  progEl.setAttribute('aria-valuenow', done);
+  document.getElementById('progress-label').textContent = done + ' of ' + total + ' done';
+}
+
+/* ── DRAWER ────────────────────────────────────────────────────── */
+const BRAIN_PROMPTS = [
+  { key:'loops', icon:'ti-infinity',     label:'Open loops',      placeholder:'What\'s still unfinished or nagging at you?',       hint:'Get it out of your head and onto the page.' },
+  { key:'worry', icon:'ti-alert-circle', label:'Worries',         placeholder:'Anything you\'re anxious about forgetting?',        hint:'Writing it down means your brain can let go.' },
+  { key:'wins',  icon:'ti-trophy',       label:'Wins today',      placeholder:'What did you actually get done?',                   hint:'Even small things count.' },
+  { key:'tmit',  icon:'ti-bolt',         label:'Tomorrow\'s MIT', placeholder:'What\'s the one thing that matters most tomorrow?', hint:'Set it now so you start with clarity.' },
+  { key:'other', icon:'ti-brain',        label:'Anything else',   placeholder:'Stray thoughts, ideas, things to remember…',       hint:'Clear the buffer.' },
+];
+// Read-only "Past entries" list: last 7 archived days, newest first.
+// Native <details> keeps it collapsed + keyboard accessible with zero JS.
+function buildBrHistory() {
+  const entries = getBrLog().entries;
+  if (!entries.length) return '';
+  const items = entries.slice(-7).reverse().map(e => `
+    <details class="history-entry">
+      <summary class="history-date">${escapeHtml(e.date)}</summary>
+      ${BRAIN_PROMPTS.filter(p => e[p.key]).map(p => `
+        <div class="history-field">
+          <div class="history-label"><i class="ti ${p.icon}"></i> ${p.label}</div>
+          <div class="history-text">${escapeHtml(e[p.key])}</div>
+        </div>`).join('')}
+    </details>`).join('');
+  return `
+    <div class="history-section">
+      <div class="drawer-section-title">Past entries</div>
+      ${items}
+    </div>`;
+}
+function buildBrainReset() {
+  const s = getState();
+  const done = !!s.sd.brain;
+  const rows = BRAIN_PROMPTS.map(p => `
+    <div class="prompt-block">
+      <div class="prompt-label"><i class="ti ${p.icon}"></i> ${p.label}</div>
+      <textarea class="prompt-ta" id="bp-${p.key}" placeholder="${p.placeholder}" oninput="saveBrPrompt('${p.key}')">${escapeHtml(s.brPrompts[p.key]||'')}</textarea>
+      <div class="prompt-hint">${p.hint}</div>
+    </div>`).join('');
+  return rows + `
+    <div class="mark-done-row">
+      <button class="mark-done-btn${done?' done':''}" id="br-done-btn" onclick="markBrainResetDone()">
+        ${done ? '✓ Brain reset done' : 'Mark brain reset done'}
+      </button>
+    </div>` + buildBrHistory() + `
+    <div class="export-row">
+      <button class="export-btn" onclick="exportJournal('md')"><i class="ti ti-file-text"></i> Export .md</button>
+      <button class="export-btn" onclick="exportJournal('json')"><i class="ti ti-database-export"></i> Backup .json</button>
+    </div>
+    <div class="export-hint" id="export-hint">${formatLastExport(getBrLog().lastExport)}</div>`;
+}
+
+function openDrawer(type, e, param) {
+  if (e) e.stopPropagation();
+  if (type === 'water') {
+    document.getElementById('drawer-title').textContent = 'Water tracker';
+    document.getElementById('drawer-icon').className    = 'ti ti-droplet';
+    setDrawerBody(buildWater());
+  } else if (type === 'brain-reset') {
+    document.getElementById('drawer-title').textContent = 'Brain reset';
+    document.getElementById('drawer-icon').className    = 'ti ti-notebook';
+    setDrawerBody(buildBrainReset());
+  } else if (type === 'dw-notes') {
+    _dwDrawerBlock = param;
+    const s = getState();
+    const label = (s.dwLabel && s.dwLabel[param]) || ('Block ' + param);
+    document.getElementById('drawer-title').textContent = label + ' — details';
+    document.getElementById('drawer-icon').className    = 'ti ti-align-left';
+    setDrawerBody(buildDwNotes(param));
+  } else if (type === 'settings') {
+    document.getElementById('drawer-title').textContent = 'Settings';
+    document.getElementById('drawer-icon').className    = 'ti ti-settings';
+    setDrawerBody(buildSettings());
+  } else {
+    document.getElementById('drawer-title').textContent = 'Brain dump';
+    document.getElementById('drawer-icon').className    = 'ti ti-notes';
+    setDrawerBody(buildNotes());
+  }
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+}
+function closeDrawer() {
+  // Flush any pending text saves before closing the drawer.
+  clearTimeout(_notesSaveTimer); saveNotesNow();
+  clearTimeout(_brSaveTimer);   flushBrPrompts();
+  clearTimeout(_dwNotesSaveTimer); if (_dwDrawerBlock) saveDwNotesNow(_dwDrawerBlock);
+  _dwDrawerBlock = null;
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+}
+
+/* ── WATER ─────────────────────────────────────────────────────── */
+function buildWater() {
+  const s   = getState();
+  const ml  = s.water || 0;
+  const pct = Math.min(100, Math.round(ml / 2000 * 100));
+  const disp = ml >= 1000 ? (ml / 1000).toFixed(1) + 'L' : ml + 'ml';
+  const full = ml >= 2000;
+  return `
+    <div class="drawer-section-title">Today\'s intake</div>
+    <div class="water-display">
+      <span class="water-num" id="w-num">${disp}</span>
+      <span class="water-goal">of 2L goal</span>
+    </div>
+    <div class="water-prog"><div class="water-prog-fill" id="w-bar" style="width:${pct}%"></div></div>
+    <div class="water-quick">
+      <button class="quick-add-btn${full?' full':''}" id="w-quick-btn" onclick="quickAddWater(250)" ${full?'disabled':''}>
+        <i class="ti ti-glass-full"></i> +250ml
+      </button>
+    </div>
+    <div class="water-actions">
+      <input type="number" id="w-in" placeholder="Add ml…" min="1" max="2000" inputmode="numeric" />
+      <button onclick="addWater()">Add</button>
+      <button onclick="setWater(0)">Reset</button>
+    </div>`;
+}
+function setWater(ml) { const s=getState(); s.water=ml; persist(s); refreshWater(s); }
+function quickAddWater(ml) {
+  const s = getState();
+  s.water = Math.min(2000, (s.water || 0) + ml);
+  persist(s); refreshWater(s);
+}
+function addWater() {
+  const inp = document.getElementById('w-in');
+  const v   = parseInt(inp.value);
+  if (!v || v <= 0) return;
+  const s = getState();
+  s.water = Math.min(5000, (s.water || 0) + v);
+  persist(s); inp.value = ''; refreshWater(s);
+}
+function refreshWater(s) {
+  const ml   = s.water || 0;
+  const pct  = Math.min(100, Math.round(ml / 2000 * 100));
+  const disp = ml >= 1000 ? (ml / 1000).toFixed(1) + 'L' : ml + 'ml';
+  const full = ml >= 2000;
+  const numEl  = document.getElementById('w-num');
+  const barEl  = document.getElementById('w-bar');
+  const btnEl  = document.getElementById('w-quick-btn');
+  if (numEl)  numEl.textContent  = disp;
+  if (barEl)  barEl.style.width  = pct + '%';
+  if (btnEl) {
+    btnEl.className = 'quick-add-btn' + (full ? ' full' : '');
+    btnEl.disabled  = full;
+  }
+}
+
+/* ── NOTES ─────────────────────────────────────────────────────── */
+function buildNotes() {
+  const notes = getState().notes || '';
+  return `
+    <div class="drawer-section-title">Brain dump — just write</div>
+    <textarea class="notes-ta" id="notes-ta"
+      placeholder="Thoughts, worries, ideas, things you don't want to forget…"
+      oninput="saveNotes()">${notes}</textarea>
+    <div class="notes-meta" id="notes-meta">${notes.length} chars · carries over day to day</div>`;
+}
+function saveNotes() {
+  clearTimeout(_notesSaveTimer);
+  _notesSaveTimer = setTimeout(saveNotesNow, 300);
+}
+function saveNotesNow() {
+  const ta = document.getElementById('notes-ta');
+  if (!ta) return;
+  const s = getState();
+  s.notes = ta.value;
+  persist(s);
+  const m = document.getElementById('notes-meta');
+  if (m) m.textContent = ta.value.length + ' chars · carries over day to day';
+}
+
+/* ── DEEP WORK — PER-BLOCK DETAIL NOTES ───────────────────────────── */
+let _dwDrawerBlock = null;
+let _dwNotesSaveTimer;
+function buildDwNotes(n) {
+  const s = getState();
+  const notes = (s.dwNotes && s.dwNotes[n]) || '';
+  return `
+    <div class="drawer-section-title">Any specifics for this block?</div>
+    <textarea class="notes-ta" id="dw-notes-ta"
+      placeholder="Sub-tasks, context, what 'done' looks like…"
+      oninput="saveDwNotes(${n})">${notes}</textarea>
+    <div class="notes-meta">Resets with the rest of Deep Work at day rollover</div>`;
+}
+function saveDwNotes(n) {
+  clearTimeout(_dwNotesSaveTimer);
+  _dwNotesSaveTimer = setTimeout(() => saveDwNotesNow(n), 300);
+}
+function saveDwNotesNow(n) {
+  const ta = document.getElementById('dw-notes-ta');
+  if (!ta) return;
+  const s = getState();
+  if (!s.dwNotes) s.dwNotes = {};
+  s.dwNotes[n] = ta.value;
+  persist(s);
+  const btn = document.getElementById('dw-note-btn-' + n);
+  if (btn) btn.classList.toggle('has-note', !!ta.value.trim());
+}
+
+/* ── HELP POPUPS ───────────────────────────────────────────────── */
+const HELP = {
+  env: {
+    title: 'Environment reset (5 min)',
+    desc:  'A quick tidy that makes tomorrow\'s you feel like they\'re starting from a good place, not digging out.',
+    items: [
+      'Fill water bottle',
+      'Put things back where they belong',
+      'Put tomorrow\'s essentials somewhere obvious',
+      'Remove one distraction',
+      'Make tomorrow\'s first task easy to start',
+    ]
+  }
+};
+function openHelp(type, e) {
+  e.stopPropagation();
+  const c = HELP[type];
+  document.getElementById('popup-title').textContent = c.title;
+  document.getElementById('popup-desc').textContent  = c.desc;
+  document.getElementById('popup-list').innerHTML    = c.items.map(i => `<li>${i}</li>`).join('');
+  document.getElementById('popup-back').classList.add('open');
+}
+function closeHelp() { document.getElementById('popup-back').classList.remove('open'); }
+
+/* ── SETTINGS & NOTIFICATIONS ────────────────────────────────────── */
+function buildSettings() {
+  const s = getState();
+  const perm = 'Notification' in window ? Notification.permission : 'unsupported';
+  const notifEnabled = !!(s.notificationsEnabled);
+  const waterEnabled = !!(s.waterReminderEnabled);
+  const shutdownEnabled = !!(s.shutdownReminderEnabled);
+
+  let note = '';
+  if (perm === 'denied') {
+    note = `<div class="settings-note warn">
+      <i class="ti ti-alert-circle"></i>
+      <span>Notifications are blocked for this app. To re-enable them, go to your device's system settings → Apps → Daily Dashboard → Notifications, then toggle "Show notifications" on.</span>
+    </div>`;
+  } else if (perm === 'unsupported') {
+    note = `<div class="settings-note warn">
+      <i class="ti ti-alert-circle"></i>
+      <span>Notifications are not supported in this browser.</span>
+    </div>`;
+  } else if (perm === 'granted') {
+    const notes = [];
+    if (notifEnabled) {
+      notes.push(`<div class="settings-note ok">
+        <i class="ti ti-check"></i>
+        <span>Test notifications are on — one fires each time you toggle.</span>
+      </div>`);
+    }
+    if (waterEnabled) {
+      notes.push(`<div class="settings-note ok">
+        <i class="ti ti-bell-ringing"></i>
+        <span>Water reminders are scheduled every 90 minutes, 9am–9pm.</span>
+      </div>`);
+    }
+    if (shutdownEnabled) {
+      notes.push(`<div class="settings-note ok">
+        <i class="ti ti-moon"></i>
+        <span>Shutdown reminder set for 9pm daily.</span>
+      </div>`);
+    }
+    note = notes.join('');
+  }
+
+  // Water reminder sub-text
+  let waterSub = 'Every 90 min, 9am–9pm';
+  if (waterEnabled && s.waterReminderNext) {
+    const next = new Date(s.waterReminderNext);
+    const now = new Date();
+    // If next fire is today, show time; if tomorrow, say "tomorrow at"
+    const nextIsTomorrow = next.toDateString() !== now.toDateString();
+    if (nextIsTomorrow) {
+      waterSub = 'Next reminder tomorrow at ' + next.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/^0/, '');
+    } else {
+      waterSub = 'Next reminder at ' + next.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/^0/, '');
+    }
+  }
+
+  // Shutdown reminder sub-text
+  let shutdownSub = 'Daily at 9pm';
+  if (shutdownEnabled && s.shutdownReminderNext) {
+    const sNext = new Date(s.shutdownReminderNext);
+    const sNow = new Date();
+    const sNextIsTomorrow = sNext.toDateString() !== sNow.toDateString();
+    if (sNextIsTomorrow) {
+      shutdownSub = 'Next reminder tomorrow at ' + sNext.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/^0/, '');
+    } else {
+      shutdownSub = 'Next reminder at ' + sNext.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }).replace(/^0/, '');
+    }
+  }
+
+  return `
+    <div class="drawer-section-title">Notifications</div>
+    <div class="settings-row">
+      <div class="settings-info">
+        <div class="settings-label">Test notification</div>
+        <div class="settings-sub">Heads-up display + vibration</div>
+      </div>
+      <div class="toggle${notifEnabled ? ' on' : ''}" id="notif-toggle"
+           onclick="toggleNotifications()" role="switch" aria-checked="${notifEnabled}"
+           aria-label="Test notification toggle"></div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-info">
+        <div class="settings-label">Drink water reminder</div>
+        <div class="settings-sub" id="water-reminder-sub">${waterSub}</div>
+      </div>
+      <div class="toggle${waterEnabled ? ' on' : ''}" id="water-reminder-toggle"
+           onclick="toggleWaterReminder()" role="switch" aria-checked="${waterEnabled}"
+           aria-label="Drink water reminder toggle"></div>
+    </div>
+    <div class="settings-row">
+      <div class="settings-info">
+        <div class="settings-label">Shutdown ritual reminder</div>
+        <div class="settings-sub" id="shutdown-reminder-sub">${shutdownSub}</div>
+      </div>
+      <div class="toggle${shutdownEnabled ? ' on' : ''}" id="shutdown-reminder-toggle"
+           onclick="toggleShutdownReminder()" role="switch" aria-checked="${shutdownEnabled}"
+           aria-label="Shutdown ritual reminder toggle"></div>
+    </div>
+    ${note}`;
+}
+
+async function toggleNotifications() {
+  const s = getState();
+  const current = !!(s.notificationsEnabled);
+
+  if (current) {
+    s.notificationsEnabled = false;
+    persist(s);
+    setDrawerBody(buildSettings());
+    return;
+  }
+
+  const permitted = await ensureNotificationPermission();
+  if (permitted) {
+    s.notificationsEnabled = true;
+    persist(s);
+    await sendTestNotification();
+  }
+  setDrawerBody(buildSettings());
+}
+
+async function sendTestNotification() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('DailyDash', {
+      body: 'Test notification — heads-up + vibration',
+      vibrate: [300, 150, 300],
+      requireInteraction: true,
+      icon: './icon-192.png',
+      tag: 'test-notification',
+    });
+  } catch {
+    // Fallback: try main-thread Notification if SW path fails
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('DailyDash', {
+          body: 'Test notification — heads-up + vibration',
+          vibrate: [300, 150, 300],
+          requireInteraction: true,
+          icon: './icon-192.png',
+        });
+      }
+    } catch { /* silent — notification delivery is best-effort */ }
+  }
+}
+
+/**
+ * Check or request notification permission. Returns true if granted (either
+ * already or just now), false if denied or unsupported. Prompts the browser
+ * permission dialog only when the current state is 'default'.
+ */
+async function ensureNotificationPermission() {
+  if (!('Notification' in window)) return false;
+  if (Notification.permission === 'granted') return true;
+  if (Notification.permission === 'denied') return false;
+
+  // Permission is 'default' — request it
+  try {
+    const result = await Notification.requestPermission();
+    return result === 'granted';
+  } catch { return false; }
+}
+
+/* ── SHARED NOTIFICATION OPTIONS ─────────────────────────────────────── */
+const WATER_NOTIFICATION_OPTS = {
+  body: 'Time to hydrate! 💧',
+  vibrate: [300, 150, 300],
+  requireInteraction: true,
+  icon: './icon-192.png',
+  tag: 'water-reminder',
+};
+
+const SHUTDOWN_NOTIFICATION_OPTS = {
+  body: 'Time to shut down for the day — tidy up, review, and plan for tomorrow 🌙',
+  vibrate: [200, 200, 200, 200],
+  requireInteraction: true,
+  icon: './icon-192.png',
+  tag: 'shutdown-reminder',
+};
+
+/* ── WATER REMINDER ────────────────────────────────────────────────── */
+/**
+ * Calculate the next water reminder fire time from a given point.
+ *
+ * Operates on a 90-minute cadence within a 9am–9pm window:
+ *   1. Before 9am        → returns 9:00 AM today
+ *   2. 9am to 9pm        → returns the next 90-minute slot boundary
+ *   3. At or after 9pm   → returns 9:00 AM tomorrow
+ *
+ * Fencepost fix: compares `>` (not `>=`) against 9pm. With `>=` a
+ * reminder scheduled exactly at 9pm would roll over to tomorrow
+ * instead of firing at 9pm — the last valid slot of the day.
+ */
+function calculateNextFire(from) {
+  const d = new Date(from);
+  const nineAM = new Date(d); nineAM.setHours(9, 0, 0, 0);
+  const ninePM = new Date(d); ninePM.setHours(21, 0, 0, 0);
+
+  if (d < nineAM) return new Date(nineAM);
+  if (d >= ninePM) {
+    const tomorrow9am = new Date(nineAM);
+    tomorrow9am.setDate(tomorrow9am.getDate() + 1);
+    return tomorrow9am;
+  }
+
+  const msSince9am = d.getTime() - nineAM.getTime();
+  const slotMs = 90 * 60 * 1000;
+  const slots = Math.floor(msSince9am / slotMs);
+  const next = new Date(nineAM.getTime() + (slots + 1) * slotMs);
+
+  if (next > ninePM) {
+    const tomorrow9am = new Date(nineAM);
+    tomorrow9am.setDate(tomorrow9am.getDate() + 1);
+    return tomorrow9am;
+  }
+  return next;
+}
+
+async function toggleWaterReminder() {
+  const s = getState();
+  const current = !!(s.waterReminderEnabled);
+
+  if (current) {
+    s.waterReminderEnabled = false;
+    s.waterReminderNext = null;
+    persist(s);
+    setDrawerBody(buildSettings());
+    // Tell SW to cancel
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      reg.active && reg.active.postMessage({ type: 'cancel-water' });
+    } catch {}
+    return;
+  }
+
+  // Ensure notification permission before enabling
+  const permitted = await ensureNotificationPermission();
+  if (!permitted) { setDrawerBody(buildSettings()); return; }
+
+  // Enable — calculate next fire time
+  const now = new Date();
+  const nextFire = calculateNextFire(now);
+  s.waterReminderEnabled = true;
+  s.waterReminderNext = nextFire.toISOString();
+  persist(s);
+  setDrawerBody(buildSettings());
+
+  // Sync to SW
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    reg.active && reg.active.postMessage({
+      type: 'schedule-water',
+      nextFire: nextFire.toISOString(),
+      notificationOpts: WATER_NOTIFICATION_OPTS,
+    });
+  } catch {}
+}
+
+async function sendWaterNotification() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('DailyDash', WATER_NOTIFICATION_OPTS);
+  } catch {
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const { tag, ...fallbackOpts } = WATER_NOTIFICATION_OPTS;
+        new Notification('DailyDash', fallbackOpts);
+      }
+    } catch {}
+  }
+}
+
+async function syncWaterSchedule() {
+  const s = getState();
+  if (!s.waterReminderEnabled) return;
+
+  const now = new Date();
+  const storedNext = s.waterReminderNext ? new Date(s.waterReminderNext) : null;
+
+  // If we missed a scheduled fire, fire it now
+  if (storedNext && now >= storedNext) {
+    await sendWaterNotification();
+  }
+
+  // Recalculate next fire and persist
+  const nextFire = calculateNextFire(now);
+  s.waterReminderNext = nextFire.toISOString();
+  persist(s);
+
+  // Re-sync to SW
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    reg.active && reg.active.postMessage({
+      type: 'schedule-water',
+      nextFire: nextFire.toISOString(),
+      notificationOpts: WATER_NOTIFICATION_OPTS,
+    });
+  } catch {}
+
+  // Refresh the settings drawer if it's open so the sub-text doesn't go stale
+  if (document.getElementById('drawer').classList.contains('open') &&
+      document.getElementById('drawer-title').textContent === 'Settings') {
+    setDrawerBody(buildSettings());
+  }
+}
+
+function calculateShutdownNextFire(from) {
+  const d = new Date(from);
+  const ninePM = new Date(d); ninePM.setHours(21, 0, 0, 0);
+
+  if (d < ninePM) return ninePM;
+  // Already past 9pm — schedule for tomorrow
+  const tomorrow9pm = new Date(ninePM);
+  tomorrow9pm.setDate(tomorrow9pm.getDate() + 1);
+  return tomorrow9pm;
+}
+
+async function toggleShutdownReminder() {
+  const s = getState();
+  const current = !!(s.shutdownReminderEnabled);
+
+  if (current) {
+    s.shutdownReminderEnabled = false;
+    s.shutdownReminderNext = null;
+    persist(s);
+    setDrawerBody(buildSettings());
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      reg.active && reg.active.postMessage({ type: 'cancel-shutdown' });
+    } catch {}
+    return;
+  }
+
+  // Ensure notification permission before enabling
+  const permitted = await ensureNotificationPermission();
+  if (!permitted) { setDrawerBody(buildSettings()); return; }
+
+  // Enable — calculate next 9pm
+  const now = new Date();
+  const nextFire = calculateShutdownNextFire(now);
+  s.shutdownReminderEnabled = true;
+  s.shutdownReminderNext = nextFire.toISOString();
+  persist(s);
+  setDrawerBody(buildSettings());
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    reg.active && reg.active.postMessage({
+      type: 'schedule-shutdown',
+      nextFire: nextFire.toISOString(),
+      notificationOpts: SHUTDOWN_NOTIFICATION_OPTS,
+    });
+  } catch {}
+}
+
+async function sendShutdownNotification() {
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('DailyDash', SHUTDOWN_NOTIFICATION_OPTS);
+  } catch {
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const { tag, ...fallbackOpts } = SHUTDOWN_NOTIFICATION_OPTS;
+        new Notification('DailyDash', fallbackOpts);
+      }
+    } catch {}
+  }
+}
+
+async function syncShutdownSchedule() {
+  const s = getState();
+  if (!s.shutdownReminderEnabled) return;
+
+  const now = new Date();
+  const storedNext = s.shutdownReminderNext ? new Date(s.shutdownReminderNext) : null;
+
+  // If we missed a scheduled fire, fire it now
+  if (storedNext && now >= storedNext) {
+    await sendShutdownNotification();
+  }
+
+  // Recalculate next fire and persist
+  const nextFire = calculateShutdownNextFire(now);
+  s.shutdownReminderNext = nextFire.toISOString();
+  persist(s);
+
+  // Re-sync to SW
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    reg.active && reg.active.postMessage({
+      type: 'schedule-shutdown',
+      nextFire: nextFire.toISOString(),
+      notificationOpts: SHUTDOWN_NOTIFICATION_OPTS,
+    });
+  } catch {}
+
+  // Refresh the settings drawer if it's open so the sub-text doesn't go stale
+  if (document.getElementById('drawer').classList.contains('open') &&
+      document.getElementById('drawer-title').textContent === 'Settings') {
+    setDrawerBody(buildSettings());
+  }
+}
+
+/* ── INIT ── ─────────────────────────────────────── */
+const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+function updateDateLabel() {
+  const now = new Date();
+  document.getElementById('date-label').textContent =
+    DAYS[now.getDay()] + ', ' + MONTHS[now.getMonth()] + ' ' + now.getDate();
+}
+updateDateLabel();
+
+/* ── DAY-ROLLOVER DETECTION ───────────────────────────────── */
+// Re-render if the day changed while the page was open (common for
+// PWAs kept on the home screen past midnight).
+function checkDayRollover() {
+  updateDateLabel();
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s.date && s.date !== getToday()) {
+        const rolled = getState();
+        render(rolled);
+        document.getElementById('br-input').value = '';
+        document.getElementById('mit').value = rolled.mit || '';
+        document.getElementById('t2').value = (rolled.tasks && rolled.tasks[2]) || '';
+        document.getElementById('t3').value = (rolled.tasks && rolled.tasks[3]) || '';
+        syncWaterSchedule();
+        syncShutdownSchedule();
+      }
+    }
+  } catch {}
+}
+// Fire when the user switches back to this tab / PWA.
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) { checkDayRollover(); syncWaterSchedule(); syncShutdownSchedule(); }
+});
+// Also poll gently — catches midnight while the page is open & visible.
+setInterval(checkDayRollover, 60_000);
+
+render(getState());
+/* ── SERVICE WORKER ────────────────────────────────────────────── */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+}
+</script>
+</body>
+</html>
