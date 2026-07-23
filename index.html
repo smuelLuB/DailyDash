@@ -1111,6 +1111,8 @@ function saveNotesNow() {
 /* ── DEEP WORK — PER-BLOCK DETAIL NOTES ───────────────────────────── */
 let _dwDrawerBlock = null;
 let _dwNotesSaveTimer;
+let _settingsToastUntil = 0;      // timestamp — green confirmation banners hide after this
+let _settingsToastTimer = null;   // setTimeout id for auto-refresh
 function buildDwNotes(n) {
   const s = getState();
   const notes = (s.dwNotes && s.dwNotes[n]) || '';
@@ -1160,6 +1162,17 @@ function openHelp(type, e) {
 }
 function closeHelp() { document.getElementById('popup-back').classList.remove('open'); }
 
+function scheduleSettingsRefresh(delayMs) {
+  _settingsToastUntil = Date.now() + delayMs;
+  if (_settingsToastTimer) clearTimeout(_settingsToastTimer);
+  _settingsToastTimer = setTimeout(() => {
+    // Only re-render if the settings drawer is still open
+    if (document.getElementById('drawer').classList.contains('open')) {
+      setDrawerBody(buildSettings());
+    }
+  }, delayMs);
+}
+
 /* ── SETTINGS & NOTIFICATIONS ────────────────────────────────────── */
 function buildSettings() {
   const s = getState();
@@ -1167,6 +1180,7 @@ function buildSettings() {
   const notifEnabled = !!(s.notificationsEnabled);
   const waterEnabled = !!(s.waterReminderEnabled);
   const shutdownEnabled = !!(s.shutdownReminderEnabled);
+  const toastActive = Date.now() < _settingsToastUntil;
 
   let note = '';
   if (perm === 'denied') {
@@ -1181,19 +1195,19 @@ function buildSettings() {
     </div>`;
   } else if (perm === 'granted') {
     const notes = [];
-    if (notifEnabled) {
+    if (notifEnabled && toastActive) {
       notes.push(`<div class="settings-note ok">
         <i class="ti ti-check"></i>
         <span>Test notifications are on — one fires each time you toggle.</span>
       </div>`);
     }
-    if (waterEnabled) {
+    if (waterEnabled && toastActive) {
       notes.push(`<div class="settings-note ok">
         <i class="ti ti-bell-ringing"></i>
         <span>Water reminders are scheduled every 90 minutes, 9am–9pm.</span>
       </div>`);
     }
-    if (shutdownEnabled) {
+    if (shutdownEnabled && toastActive) {
       notes.push(`<div class="settings-note ok">
         <i class="ti ti-moon"></i>
         <span>Shutdown reminder set for 9pm daily.</span>
@@ -1277,6 +1291,7 @@ async function toggleNotifications() {
     s.notificationsEnabled = true;
     persist(s);
     await sendTestNotification();
+    scheduleSettingsRefresh(4000);
   }
   setDrawerBody(buildSettings());
 }
@@ -1406,6 +1421,7 @@ async function toggleWaterReminder() {
   s.waterReminderNext = nextFire.toISOString();
   persist(s);
   setDrawerBody(buildSettings());
+  scheduleSettingsRefresh(4000);
 
   // Sync to SW
   try {
@@ -1504,6 +1520,7 @@ async function toggleShutdownReminder() {
   s.shutdownReminderNext = nextFire.toISOString();
   persist(s);
   setDrawerBody(buildSettings());
+  scheduleSettingsRefresh(4000);
 
   try {
     const reg = await navigator.serviceWorker.ready;
