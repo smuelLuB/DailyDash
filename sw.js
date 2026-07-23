@@ -4,7 +4,7 @@
 // See: https://github.com/smuelLuB/DailyDash/issues/6
 
 /* ── CACHE CONFIG ────────────────────────────────────────────────── */
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = 'app-' + CACHE_VERSION;
 
 // Precached URLs — installed atomically on the install event.
