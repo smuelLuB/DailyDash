@@ -1173,6 +1173,14 @@ function scheduleSettingsRefresh(delayMs) {
   }, delayMs);
 }
 
+function clearSettingsToast() {
+  _settingsToastUntil = 0;
+  if (_settingsToastTimer) {
+    clearTimeout(_settingsToastTimer);
+    _settingsToastTimer = null;
+  }
+}
+
 /* ── SETTINGS & NOTIFICATIONS ────────────────────────────────────── */
 function buildSettings() {
   const s = getState();
@@ -1276,6 +1284,7 @@ function buildSettings() {
 }
 
 async function toggleNotifications() {
+  clearSettingsToast();
   const s = getState();
   const current = !!(s.notificationsEnabled);
 
@@ -1394,6 +1403,7 @@ function calculateNextFire(from) {
 }
 
 async function toggleWaterReminder() {
+  clearSettingsToast();
   const s = getState();
   const current = !!(s.waterReminderEnabled);
 
@@ -1420,8 +1430,8 @@ async function toggleWaterReminder() {
   s.waterReminderEnabled = true;
   s.waterReminderNext = nextFire.toISOString();
   persist(s);
-  setDrawerBody(buildSettings());
   scheduleSettingsRefresh(4000);
+  setDrawerBody(buildSettings());
 
   // Sync to SW
   try {
@@ -1494,6 +1504,7 @@ function calculateShutdownNextFire(from) {
 }
 
 async function toggleShutdownReminder() {
+  clearSettingsToast();
   const s = getState();
   const current = !!(s.shutdownReminderEnabled);
 
@@ -1519,8 +1530,8 @@ async function toggleShutdownReminder() {
   s.shutdownReminderEnabled = true;
   s.shutdownReminderNext = nextFire.toISOString();
   persist(s);
-  setDrawerBody(buildSettings());
   scheduleSettingsRefresh(4000);
+  setDrawerBody(buildSettings());
 
   try {
     const reg = await navigator.serviceWorker.ready;
