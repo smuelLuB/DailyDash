@@ -1073,11 +1073,12 @@ function buildWater() {
       <button onclick="setWater(0)">Reset</button>
     </div>`;
 }
-function setWater(ml) { const s=getState(); s.water=ml; persist(s); refreshWater(s); }
+function setWater(ml) { const s=getState(); s.water=ml; s.habits.water=(s.water>=2000); persist(s); render(s); refreshWater(s); }
 function quickAddWater(ml) {
   const s = getState();
   s.water = Math.min(2000, (s.water || 0) + ml);
-  persist(s); refreshWater(s);
+  s.habits.water = (s.water >= 2000);
+  persist(s); render(s); refreshWater(s);
 }
 function addWater() {
   const inp = document.getElementById('w-in');
@@ -1085,7 +1086,8 @@ function addWater() {
   if (!v || v <= 0) return;
   const s = getState();
   s.water = Math.min(5000, (s.water || 0) + v);
-  persist(s); inp.value = ''; refreshWater(s);
+  s.habits.water = (s.water >= 2000);
+  persist(s); inp.value = ''; render(s); refreshWater(s);
 }
 function refreshWater(s) {
   const ml   = s.water || 0;
