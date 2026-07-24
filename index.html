@@ -218,6 +218,18 @@
     .mit-check.done { background: var(--warning); border-color: var(--warning); color: #fff; }
 
     /* ── DEEP WORK ───────────────────────────────────────────────── */
+    .dw-summary {
+      list-style: none;  /* hide default disclosure triangle */
+      cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      user-select: none;
+    }
+    .dw-summary::-webkit-details-marker { display: none; }
+    .dw-chevron {
+      font-size: 14px; color: var(--text-muted);
+      transition: rotate 0.2s;
+    }
+    .dw-details[open] .dw-chevron { rotate: 90deg; }
     .deep-work  { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .block-card {
       background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
@@ -583,33 +595,38 @@
 
     <!-- DEEP WORK -->
     <div class="section">
-      <div class="section-title">Deep work</div>
-      <div class="deep-work">
-        <div class="block-card" id="dw-1" onclick="toggleNested('dw',1)">
-          <i class="ti ti-brain bi"></i>
-          <div class="block-info">
-            <input class="block-name-input" id="dw-name-1" placeholder="Block 1"
-              oninput="save()" onclick="event.stopPropagation()" />
-            <div class="block-sub">morning</div>
+      <details class="dw-details" id="dw-details">
+        <summary class="dw-summary section-title">
+          <i class="ti ti-chevron-right dw-chevron"></i>
+          Deep work
+        </summary>
+        <div class="deep-work">
+          <div class="block-card" id="dw-1" onclick="toggleNested('dw',1)">
+            <i class="ti ti-brain bi"></i>
+            <div class="block-info">
+              <input class="block-name-input" id="dw-name-1" placeholder="Block 1"
+                oninput="save()" onclick="event.stopPropagation()" />
+              <div class="block-sub">morning</div>
+            </div>
+            <button class="dw-note-btn" id="dw-note-btn-1" onclick="openDrawer('dw-notes', event, 1)" aria-label="Block 1 details">
+              <i class="ti ti-align-left"></i>
+            </button>
+            <div class="block-dot">✓</div>
           </div>
-          <button class="dw-note-btn" id="dw-note-btn-1" onclick="openDrawer('dw-notes', event, 1)" aria-label="Block 1 details">
-            <i class="ti ti-align-left"></i>
-          </button>
-          <div class="block-dot">✓</div>
-        </div>
-        <div class="block-card" id="dw-2" onclick="toggleNested('dw',2)">
-          <i class="ti ti-brain bi"></i>
-          <div class="block-info">
-            <input class="block-name-input" id="dw-name-2" placeholder="Block 2"
-              oninput="save()" onclick="event.stopPropagation()" />
-            <div class="block-sub">afternoon</div>
+          <div class="block-card" id="dw-2" onclick="toggleNested('dw',2)">
+            <i class="ti ti-brain bi"></i>
+            <div class="block-info">
+              <input class="block-name-input" id="dw-name-2" placeholder="Block 2"
+                oninput="save()" onclick="event.stopPropagation()" />
+              <div class="block-sub">afternoon</div>
+            </div>
+            <button class="dw-note-btn" id="dw-note-btn-2" onclick="openDrawer('dw-notes', event, 2)" aria-label="Block 2 details">
+              <i class="ti ti-align-left"></i>
+            </button>
+            <div class="block-dot">✓</div>
           </div>
-          <button class="dw-note-btn" id="dw-note-btn-2" onclick="openDrawer('dw-notes', event, 2)" aria-label="Block 2 details">
-            <i class="ti ti-align-left"></i>
-          </button>
-          <div class="block-dot">✓</div>
         </div>
-      </div>
+      </details>
     </div>
 
     <!-- SHUTDOWN -->
@@ -704,7 +721,7 @@ function getState() {
         const allHabitsDone = !!(s.habits && s.habits.sleep && s.habits.exercise && s.habits.water);
         habitStreak = (noGap && allHabitsDone) ? habitStreak + 1 : 0;
       }
-      return { date: today, habits:{}, br:'', brDone:false, mit: carryMit, mitDone:false, tasks: carryTasks, taskDone: carryTaskDone, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || today, habitStreak, notificationsEnabled: s.notificationsEnabled || false, waterReminderEnabled: s.waterReminderEnabled || false, waterReminderNext: null, shutdownReminderEnabled: s.shutdownReminderEnabled || false, shutdownReminderNext: null };
+      return { date: today, habits:{}, br:'', brDone:false, mit: carryMit, mitDone:false, tasks: carryTasks, taskDone: carryTaskDone, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || today, habitStreak, dwCollapsed: s.dwCollapsed, notificationsEnabled: s.notificationsEnabled || false, waterReminderEnabled: s.waterReminderEnabled || false, waterReminderNext: null, shutdownReminderEnabled: s.shutdownReminderEnabled || false, shutdownReminderNext: null };
     }
     // brain reset prompts expire at midnight — if the write date isn't today,
     // archive and clear them
@@ -716,7 +733,7 @@ function getState() {
     return s;
   } catch {
     const today = getToday();
-    return { date: today, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, water:0, notes:'', brPrompts:{}, brPromptDate: today, habitStreak: 0, notificationsEnabled: false, waterReminderEnabled: false, waterReminderNext: null, shutdownReminderEnabled: false, shutdownReminderNext: null };
+    return { date: today, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, water:0, notes:'', brPrompts:{}, brPromptDate: today, habitStreak: 0, dwCollapsed: undefined, notificationsEnabled: false, waterReminderEnabled: false, waterReminderNext: null, shutdownReminderEnabled: false, shutdownReminderNext: null };
   }
 }
 function persist(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage full or unavailable — UI stays in sync for this session */ } }
@@ -906,7 +923,13 @@ function render(s) {
     if (s.tasks && s.tasks[n] && !inp.value) inp.value = s.tasks[n];
     inp.closest('.task-row')?.classList.toggle('done-state', !!s.taskDone[n]);
   });
-  // deep work
+  // deep work — collapse/expand
+  const dwDetails = document.getElementById('dw-details');
+  if (dwDetails) {
+    if (s.dwCollapsed === false) dwDetails.setAttribute('open', '');
+    else dwDetails.removeAttribute('open');
+  }
+  // deep work — block cards
   [1,2].forEach(n => {
     document.getElementById('dw-'+n).classList.toggle('done', !!s.dw[n]);
     const nameEl = document.getElementById('dw-name-'+n);
@@ -1626,6 +1649,14 @@ document.addEventListener('visibilitychange', () => {
 });
 // Also poll gently — catches midnight while the page is open & visible.
 setInterval(checkDayRollover, 60_000);
+
+// Persist deep work collapse state on toggle
+document.getElementById('dw-details').addEventListener('toggle', () => {
+  const s = getState();
+  const details = document.getElementById('dw-details');
+  s.dwCollapsed = !details.open;
+  persist(s);
+});
 
 render(getState());
 /* ── SERVICE WORKER ────────────────────────────────────────────── */
