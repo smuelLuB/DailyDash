@@ -494,6 +494,76 @@
     .export-btn:active { background: var(--border); }
     .export-hint { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 8px; }
 
+    /* ── MOOD SELECTOR (drawer) ────────────────────────────────────── */
+    .mood-section {
+      border-top: 1px solid var(--border);
+      padding-top: 12px; margin-top: 4px;
+    }
+    .mood-label {
+      font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    .mood-chips {
+      display: flex; gap: 8px;
+    }
+    .mood-chip {
+      flex: 1; padding: 8px 4px;
+      background: transparent; border: 1.5px solid var(--border-strong);
+      border-radius: var(--radius);
+      font-size: 13px; font-weight: 600;
+      cursor: pointer; font-family: var(--font);
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .mood-chip:active { transform: scale(0.96); }
+    .mood-chip.rough  { color: #e74c3c; border-color: #e74c3c; }
+    .mood-chip.okay   { color: #f39c12; border-color: #f39c12; }
+    .mood-chip.great  { color: #27ae60; border-color: #27ae60; }
+    .mood-chip.rough.selected  { background: rgba(231,76,60,0.15); }
+    .mood-chip.okay.selected   { background: rgba(243,156,18,0.15); }
+    .mood-chip.great.selected  { background: rgba(39,174,96,0.15); }
+    .mood-section.dimmed {
+      opacity: 0.5; pointer-events: none;
+    }
+
+    /* ── MOOD STRIP (drawer) ─────────────────────────────────────────── */
+    .mood-strip {
+      margin-top: 1rem; margin-bottom: 0.5rem;
+    }
+    .mood-strip-label {
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      letter-spacing: 0.05em; text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .mood-dots {
+      display: flex; gap: 8px; justify-content: flex-start;
+    }
+    .mood-day {
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+    }
+    .mood-dot {
+      width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+    }
+    .mood-dot.great { background: #27ae60; }
+    .mood-dot.okay  { background: #f39c12; }
+    .mood-dot.rough { background: #e74c3c; }
+    .mood-dot.empty { background: var(--border-strong); }
+    .mood-day-label {
+      font-size: 10px; color: var(--text-muted); font-weight: 500;
+    }
+
+    /* ── MOOD IN HISTORY ─────────────────────────────────────────────── */
+    .history-mood {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 13px; color: var(--text); margin-top: 8px; padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+    .history-mood-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+    .history-mood-dot.great { background: #27ae60; }
+    .history-mood-dot.okay  { background: #f39c12; }
+    .history-mood-dot.rough { background: #e74c3c; }
+
     /* ── SETTINGS (drawer) ────────────────────────────────────────── */
     .settings-row {
       display: flex; align-items: center; gap: 14px;
@@ -825,6 +895,11 @@ function promptsToEntry(prompts, date) {
     const v = ((prompts && prompts[p.key]) || '').trim();
     if (v) { entry[p.key] = prompts[p.key]; hasText = true; }
   });
+  // Mood is not in BRAIN_PROMPTS — handle separately
+  if (prompts && prompts.mood) {
+    entry.mood = prompts.mood;
+    hasText = true;
+  }
   return hasText ? entry : null;
 }
 
@@ -936,6 +1011,17 @@ function flushBrPrompts() {
       changed = true;
     }
   });
+  // Mood chip — read from DOM
+  const moodChips = document.getElementById('mood-chips');
+  if (moodChips) {
+    const moodVal = moodChips.dataset.mood || null;
+    // Normalize: treat undefined (initial state) and null (explicit clear)
+    // the same to avoid a spurious persist on first drawer-open.
+    if ((s.brPrompts.mood || null) !== moodVal) {
+      s.brPrompts.mood = moodVal;
+      changed = true;
+    }
+  }
   if (changed && s.brPromptDate !== getToday()) {
     s.brPromptDate = getToday();
   }
@@ -948,6 +1034,25 @@ function markBrainResetDone() {
   const btn = document.getElementById('br-done-btn');
   if (btn) btn.className = 'mark-done-btn' + (s.sd.brain ? ' done' : '');
   closeDrawer();
+}
+function setMood(value) {
+  const container = document.getElementById('mood-chips');
+  if (!container) return;
+  const current = container.querySelector('.mood-chip.selected');
+  if (current && current.dataset.mood === value) {
+    // Toggle off — deselect
+    current.classList.remove('selected');
+    container.dataset.mood = '';
+  } else {
+    // Select the new chip, deselect previous
+    if (current) current.classList.remove('selected');
+    const target = container.querySelector(`.mood-chip[data-mood="${value}"]`);
+    if (target) {
+      target.classList.add('selected');
+      container.dataset.mood = value;
+    }
+  }
+  saveBrPrompt(); // trigger debounced flush
 }
 
 /* ── JOURNAL EXPORT ────────────────────────────────────────────── */
@@ -967,7 +1072,9 @@ function buildJournalMd(entries) {
   const days = entries.slice().reverse().map(e => {
     const fields = BRAIN_PROMPTS.filter(p => e[p.key])
       .map(p => `**${p.label}**\n${e[p.key]}`).join('\n\n');
-    return `## ${e.date}\n\n${fields}`;
+    const moodLine = e.mood ? `**Mood:** ${e.mood}` : '';
+    const body = [fields, moodLine].filter(Boolean).join('\n\n');
+    return `## ${e.date}\n\n${body}`;
   });
   return `# Brain Reset Journal\n\n${days.join('\n\n')}\n`;
 }
@@ -1089,6 +1196,11 @@ function buildBrHistory() {
   const items = entries.slice(-7).reverse().map(e => `
     <details class="history-entry">
       <summary class="history-date">${escapeHtml(e.date)}</summary>
+      ${e.mood ? `
+        <div class="history-mood">
+          <span class="history-mood-dot ${e.mood}"></span>
+          ${e.mood}
+        </div>` : ''}
       ${BRAIN_PROMPTS.filter(p => e[p.key]).map(p => `
         <div class="history-field">
           <div class="history-label"><i class="ti ${p.icon}"></i> ${p.label}</div>
@@ -1101,6 +1213,39 @@ function buildBrHistory() {
       ${items}
     </div>`;
 }
+function buildMoodStrip() {
+  const entries = getBrLog().entries;
+  if (!entries.length) return '';
+
+  const moodMap = {};
+  entries.forEach(e => { moodMap[e.date] = e.mood || null; });
+
+  const today = new Date();
+  const days = [];
+  for (let i = 7; i >= 1; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    days.push(d);
+  }
+
+  const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+  const dots = days.map(d => {
+    const dateStr = d.toDateString();
+    const mood = moodMap[dateStr];
+    const dotClass = mood ? `mood-dot ${mood}` : 'mood-dot empty';
+    const label = DAY_LABELS[d.getDay()];
+    return `<div class="mood-day">
+      <span class="${dotClass}"></span>
+      <span class="mood-day-label">${label}</span>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="mood-strip">
+      <div class="mood-strip-label">This week</div>
+      <div class="mood-dots">${dots}</div>
+    </div>`;
+}
 function buildBrainReset() {
   const s = getState();
   const done = !!s.sd.brain;
@@ -1110,12 +1255,22 @@ function buildBrainReset() {
       <textarea class="prompt-ta" id="bp-${p.key}" placeholder="${p.placeholder}" oninput="saveBrPrompt('${p.key}')">${escapeHtml(s.brPrompts[p.key]||'')}</textarea>
       <div class="prompt-hint">${p.hint}</div>
     </div>`).join('');
-  return rows + `
+  const mood = s.brPrompts.mood || '';
+  const moodSection = `
+    <div class="mood-section${done ? ' dimmed' : ''}">
+      <div class="mood-label">How did you feel your day was?</div>
+      <div class="mood-chips" id="mood-chips" data-mood="${mood}">
+        <button class="mood-chip rough${mood === 'rough' ? ' selected' : ''}" data-mood="rough" onclick="setMood('rough')">😤 Rough</button>
+        <button class="mood-chip okay${mood === 'okay' ? ' selected' : ''}"   data-mood="okay"  onclick="setMood('okay')">😐 Okay</button>
+        <button class="mood-chip great${mood === 'great' ? ' selected' : ''}" data-mood="great" onclick="setMood('great')">😊 Great</button>
+      </div>
+    </div>`;
+  return rows + moodSection + `
     <div class="mark-done-row">
       <button class="mark-done-btn${done?' done':''}" id="br-done-btn" onclick="markBrainResetDone()">
         ${done ? '✓ Brain reset done' : 'Mark brain reset done'}
       </button>
-    </div>` + buildBrHistory() + `
+    </div>` + buildMoodStrip() + buildBrHistory() + `
     <div class="export-row">
       <button class="export-btn" onclick="exportJournal('md')"><i class="ti ti-file-text"></i> Export .md</button>
       <button class="export-btn" onclick="exportJournal('json')"><i class="ti ti-database-export"></i> Backup .json</button>
