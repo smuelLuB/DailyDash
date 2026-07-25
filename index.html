@@ -594,6 +594,75 @@
       transition: transform 0.2s ease;
     }
     .toggle.on::after { transform: translateX(20px); }
+    /* ── FOCUS TIMER ────────────────────────────────────────────────── */
+    .focus-display {
+      text-align: center;
+      font-size: 64px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 2px;
+      color: var(--text);
+      margin: 1rem 0 1.5rem;
+      user-select: none;
+    }
+    .focus-presets {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+    .focus-preset {
+      flex: 1;
+      padding: 10px 8px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--surface);
+      color: var(--text-secondary);
+      font-size: 14px;
+      font-weight: 500;
+      text-align: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .focus-preset:active { background: var(--surface-2); }
+    .focus-preset.active {
+      background: var(--accent-bg);
+      border-color: var(--accent-border);
+      color: var(--accent-text);
+    }
+    .focus-preset:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .focus-toggle {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: var(--radius);
+      background: var(--accent);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: opacity 0.15s;
+    }
+    .focus-toggle:active { opacity: 0.85; }
+    .focus-reset {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
+    }
+    .focus-reset:hover { color: var(--text-secondary); }
   </style>
 </head>
 <body>
@@ -607,6 +676,9 @@
         <div class="today-label">Today</div>
       </div>
       <div class="icon-row">
+        <div class="icon-btn" onclick="openDrawer('focus')" aria-label="Focus tracker">
+          <i class="ti ti-clock"></i>
+        </div>
         <div class="icon-btn" onclick="openDrawer('water')" aria-label="Water tracker">
           <i class="ti ti-droplet"></i>
         </div>
@@ -842,7 +914,7 @@ function getState() {
         const allHabitsDone = !!(s.habits && s.habits.sleep && s.habits.exercise && s.habits.water);
         habitStreak = (noGap && allHabitsDone) ? habitStreak + 1 : 0;
       }
-      return { date: today, habits:{}, br:'', brDone:false, mit: carryMit, mitDone:false, tasks: carryTasks, taskDone: carryTaskDone, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, planDone: false, planTasks: s.planTasks || { mit: "", t2: "", t3: "" }, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || today, habitStreak, dwCollapsed: s.dwCollapsed, notificationsEnabled: s.notificationsEnabled || false, waterReminderEnabled: s.waterReminderEnabled || false, waterReminderNext: null, shutdownReminderEnabled: s.shutdownReminderEnabled || false, shutdownReminderNext: null };
+      return { date: today, habits:{}, br:'', brDone:false, mit: carryMit, mitDone:false, tasks: carryTasks, taskDone: carryTaskDone, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, planDone: false, planTasks: s.planTasks || { mit: "", t2: "", t3: "" }, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || today, habitStreak, dwCollapsed: s.dwCollapsed, notificationsEnabled: s.notificationsEnabled || false, waterReminderEnabled: s.waterReminderEnabled || false, waterReminderNext: null, shutdownReminderEnabled: s.shutdownReminderEnabled || false, shutdownReminderNext: null, focus: undefined };
     }
     // Schema migration — sd.plan → planTasks / planDone
     if (!s.planTasks) {
@@ -861,7 +933,7 @@ function getState() {
     return s;
   } catch {
     const today = getToday();
-    return { date: today, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, planDone: false, planTasks: { mit: "", t2: "", t3: "" }, water:0, notes:'', brPrompts:{}, brPromptDate: today, habitStreak: 0, dwCollapsed: undefined, notificationsEnabled: false, waterReminderEnabled: false, waterReminderNext: null, shutdownReminderEnabled: false, shutdownReminderNext: null };
+    return { date: today, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, planDone: false, planTasks: { mit: "", t2: "", t3: "" }, water:0, notes:'', brPrompts:{}, brPromptDate: today, habitStreak: 0, dwCollapsed: undefined, notificationsEnabled: false, waterReminderEnabled: false, waterReminderNext: null, shutdownReminderEnabled: false, shutdownReminderNext: null, focus: undefined };
   }
 }
 function persist(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage full or unavailable — UI stays in sync for this session */ } }
@@ -1299,6 +1371,15 @@ function openDrawer(type, e, param) {
     document.getElementById('drawer-title').textContent = 'Tomorrow planned';
     document.getElementById('drawer-icon').className    = 'ti ti-calendar-check';
     setDrawerBody(buildPlanDrawer());
+  } else if (type === 'focus') {
+    document.getElementById('drawer-title').textContent = 'Focus timer';
+    document.getElementById('drawer-icon').className    = 'ti ti-clock';
+    setDrawerBody(buildFocus());
+    // Restart tick interval if timer was running when drawer was closed
+    const f = getState().focus;
+    if (f && f.status === 'running' && !_focusInterval) {
+      _focusInterval = setInterval(tickFocus, 500);
+    }
   } else if (type === 'settings') {
     document.getElementById('drawer-title').textContent = 'Settings';
     document.getElementById('drawer-icon').className    = 'ti ti-settings';
@@ -1312,6 +1393,8 @@ function openDrawer(type, e, param) {
   document.getElementById('drawer').classList.add('open');
 }
 function closeDrawer() {
+  // Stop focus timer interval if running
+  if (_focusInterval) { clearInterval(_focusInterval); _focusInterval = null; }
   // Flush any pending text saves before closing the drawer.
   saveNotes.clear(); saveNotesNow();
   saveBrPrompt.clear();   flushBrPrompts();
@@ -1390,6 +1473,143 @@ function refreshWater(s) {
   }
 }
 
+function buildFocus() {
+  const s = getState();
+  const f = s.focus || { preset: 25, breakPreset: 5, endTime: null, remaining: null, status: 'idle' };
+
+  const presets = [
+    { focus: 25, break: 5 },
+    { focus: 50, break: 10 },
+    { focus: 90, break: 20 },
+  ];
+
+  const presetHtml = presets.map(p => {
+    const active = f.preset === p.focus ? ' active' : '';
+    const disabled = (f.status === 'running' || f.status === 'paused') ? ' disabled' : '';
+    return `<button class="focus-preset${active}"${disabled}
+              onclick="selectFocusPreset(${p.focus}, ${p.break})"
+              aria-pressed="${f.preset === p.focus}"
+              aria-label="${p.focus} min focus, ${p.break} min break">
+              ${p.focus} / ${p.break}
+            </button>`;
+  }).join('');
+
+  let displayMin = f.preset;
+  let displaySec = 0;
+  if (f.status === 'running') {
+    const remaining = Math.max(0, f.endTime - Date.now());
+    displayMin = Math.floor(remaining / 60000);
+    displaySec = Math.floor((remaining % 60000) / 1000);
+  } else if (f.status === 'paused' && f.remaining !== null) {
+    displayMin = Math.floor(f.remaining / 60000);
+    displaySec = Math.floor((f.remaining % 60000) / 1000);
+  }
+
+  const mmss = String(displayMin).padStart(2, '0') + ':' + String(displaySec).padStart(2, '0');
+
+  let toggleLabel, toggleIcon;
+  if (f.status === 'done') {
+    toggleLabel = 'Done';
+    toggleIcon = 'ti-check';
+  } else if (f.status === 'running') {
+    toggleLabel = 'Pause';
+    toggleIcon = 'ti-player-pause';
+  } else if (f.status === 'paused') {
+    toggleLabel = 'Resume';
+    toggleIcon = 'ti-player-play';
+  } else {
+    toggleLabel = 'Start';
+    toggleIcon = 'ti-player-play';
+  }
+
+  const showReset = f.status === 'running' || f.status === 'paused';
+
+  return `
+    <div class="focus-presets">${presetHtml}</div>
+    <div class="focus-display" id="focus-display">${mmss}</div>
+    <button class="focus-toggle" id="focus-toggle" onclick="toggleFocus()">
+      <i class="ti ${toggleIcon}"></i> ${toggleLabel}
+    </button>
+    ${showReset ? `<button class="focus-reset" onclick="resetFocus()">Reset</button>` : ''}
+  `;
+}
+
+function selectFocusPreset(p, bp) {
+  const s = getState();
+  const f = s.focus || { preset: 25, breakPreset: 5, endTime: null, remaining: null, status: 'idle' };
+  if (f.status !== 'idle' && f.status !== 'done') return;
+  s.focus = { preset: p, breakPreset: bp, endTime: null, remaining: null, status: 'idle' };
+  persist(s);
+  setDrawerBody(buildFocus());
+}
+function toggleFocus() {
+  const s = getState();
+  const f = s.focus || { preset: 25, breakPreset: 5, endTime: null, remaining: null, status: 'idle' };
+
+  switch (f.status) {
+    case 'idle':
+    case 'done':
+      f.status = 'running';
+      f.endTime = Date.now() + f.preset * 60 * 1000;
+      f.remaining = null;
+      _focusInterval = setInterval(tickFocus, 500);
+      break;
+    case 'running':
+      f.status = 'paused';
+      f.remaining = Math.max(0, f.endTime - Date.now());
+      f.endTime = null;
+      if (_focusInterval) { clearInterval(_focusInterval); _focusInterval = null; }
+      break;
+    case 'paused':
+      f.status = 'running';
+      f.endTime = Date.now() + f.remaining;
+      f.remaining = null;
+      _focusInterval = setInterval(tickFocus, 500);
+      break;
+  }
+
+  s.focus = f;
+  persist(s);
+  setDrawerBody(buildFocus());
+}
+
+function tickFocus() {
+  const s = getState();
+  const f = s.focus;
+  if (!f || f.status !== 'running') {
+    if (_focusInterval) { clearInterval(_focusInterval); _focusInterval = null; }
+    return;
+  }
+
+  const remaining = Math.max(0, f.endTime - Date.now());
+
+  // Update the display without full re-render for performance
+  const display = document.getElementById('focus-display');
+  if (display) {
+    const min = Math.floor(remaining / 60000);
+    const sec = Math.floor((remaining % 60000) / 1000);
+    display.textContent = String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+  }
+
+  if (remaining <= 0) {
+    if (_focusInterval) { clearInterval(_focusInterval); _focusInterval = null; }
+    f.status = 'done';
+    f.endTime = null;
+    f.remaining = null;
+    persist(s);
+    fireFocusDoneNotification();
+    setDrawerBody(buildFocus());
+  }
+}
+
+function resetFocus() {
+  if (_focusInterval) { clearInterval(_focusInterval); _focusInterval = null; }
+  const s = getState();
+  const f = s.focus || { preset: 25, breakPreset: 5, endTime: null, remaining: null, status: 'idle' };
+  s.focus = { preset: f.preset, breakPreset: f.breakPreset, endTime: null, remaining: null, status: 'idle' };
+  persist(s);
+  setDrawerBody(buildFocus());
+}
 /* ── NOTES ─────────────────────────────────────────────────────── */
 function buildNotes() {
   const notes = getState().notes || '';
@@ -1415,6 +1635,7 @@ function saveNotesNow() {
 let _dwDrawerBlock = null;
 let _settingsToastUntil = 0;      // timestamp — green confirmation banners hide after this
 let _settingsToastTimer = null;   // setTimeout id for auto-refresh
+let _focusInterval = null;
 function buildDwNotes(n) {
   const s = getState();
   const notes = (s.dwNotes && s.dwNotes[n]) || '';
@@ -1626,6 +1847,33 @@ async function sendTestNotification() {
         });
       }
     } catch { /* silent — notification delivery is best-effort */ }
+  }
+}
+async function fireFocusDoneNotification() {
+  const s = getState();
+  if (!s.notificationsEnabled) return; // Respect user preference
+
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('DailyDash', {
+      body: 'Focus session complete',
+      vibrate: [2000],
+      requireInteraction: true,
+      icon: './icon-192.png',
+      tag: 'focus-done',
+    });
+  } catch {
+    // Fallback: main-thread Notification
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('DailyDash', {
+          body: 'Focus session complete',
+          vibrate: [2000],
+          requireInteraction: true,
+          icon: './icon-192.png',
+        });
+      }
+    } catch { /* silent — best-effort delivery */ }
   }
 }
 
