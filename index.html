@@ -447,6 +447,28 @@
     }
     .mark-done-btn.done { background: var(--warning); border-color: var(--warning); color: #fff; }
 
+    /* ── PLAN DRAWER ───────────────────────────────────────────────── */
+    .plan-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .plan-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 14px;
+    }
+    .plan-input::placeholder { color: var(--text-muted); }
+    .mark-done-btn:disabled {
+      opacity: 0.4;
+      cursor: default;
+    }
+
     /* ── JOURNAL HISTORY (drawer) ─────────────────────────────────── */
     .history-section { margin-top: 1.25rem; border-top: 1px solid var(--border); padding-top: 14px; }
     .history-entry {
@@ -647,9 +669,12 @@
           </button>
           <div class="sd-dot">✓</div>
         </div>
-        <div class="sd-row" id="sd-plan" onclick="toggleNested('sd','plan')">
+        <div class="sd-row" id="sd-plan" onclick="togglePlanDone(event)">
           <i class="ti ti-calendar-check sd-icon"></i>
           <div class="sd-text">Tomorrow planned</div>
+          <button class="journal-btn" onclick="openDrawer('plan',event)" aria-label="Edit tomorrow's plan">
+            <i class="ti ti-edit"></i> Plan
+          </button>
           <div class="sd-dot">✓</div>
         </div>
       </div>
@@ -700,13 +725,39 @@ function getState() {
       // keep notes and brPrompts (brPrompts have their own midnight expiry below).
       // MIT and Task 2/3 carry over ONLY if they were left unfinished;
       // anything already marked done clears like everything else.
-      const carryMit = s.mitDone ? '' : (s.mit || '');
-      const carryTasks = {}, carryTaskDone = {};
+      let carryMit = s.mitDone ? '' : (s.mit || '');
+      let carryTasks = {}, carryTaskDone = {};
       [2, 3].forEach(n => {
         const wasDone = !!(s.taskDone && s.taskDone[n]);
         carryTasks[n] = wasDone ? '' : ((s.tasks && s.tasks[n]) || '');
         carryTaskDone[n] = false;
       });
+      // ── Shutdown plan pipeline ──
+      const planTasks = s.planTasks || {};
+      const unfinished = {};
+      unfinished.mit = (!s.mitDone && s.mit && s.mit.trim()) ? s.mit.trim() : null;
+      [2, 3].forEach(n => {
+        unfinished[n] = (!(s.taskDone && s.taskDone[n]) && s.tasks && s.tasks[n] && s.tasks[n].trim())
+          ? s.tasks[n].trim()
+          : null;
+      });
+
+      const anyPlan = !!(planTasks.mit || planTasks.t2 || planTasks.t3);
+
+      if (anyPlan) {
+        if (planTasks.mit) carryMit = planTasks.mit;
+        if (planTasks.t2)  carryTasks[2] = planTasks.t2;
+        if (planTasks.t3)  carryTasks[3] = planTasks.t3;
+        s.planTasks = {
+          mit: unfinished.mit || '',
+          t2: unfinished[2] || '',
+          t3: unfinished[3] || '',
+        };
+      } else {
+        s.planTasks = planTasks;
+      }
+      s.planDone = false;
+
       // Habit streak: increments only on a genuine day rollover (s.date
       // !== today), never on the same-day schema-migration path above.
       // Requires ALL THREE habits (sleep, exercise, water) completed on
@@ -721,7 +772,14 @@ function getState() {
         const allHabitsDone = !!(s.habits && s.habits.sleep && s.habits.exercise && s.habits.water);
         habitStreak = (noGap && allHabitsDone) ? habitStreak + 1 : 0;
       }
-      return { date: today, habits:{}, br:'', brDone:false, mit: carryMit, mitDone:false, tasks: carryTasks, taskDone: carryTaskDone, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || today, habitStreak, dwCollapsed: s.dwCollapsed, notificationsEnabled: s.notificationsEnabled || false, waterReminderEnabled: s.waterReminderEnabled || false, waterReminderNext: null, shutdownReminderEnabled: s.shutdownReminderEnabled || false, shutdownReminderNext: null };
+      return { date: today, habits:{}, br:'', brDone:false, mit: carryMit, mitDone:false, tasks: carryTasks, taskDone: carryTaskDone, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, planDone: false, planTasks: s.planTasks || { mit: "", t2: "", t3: "" }, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || s.date || today, habitStreak, dwCollapsed: s.dwCollapsed, notificationsEnabled: s.notificationsEnabled || false, waterReminderEnabled: s.waterReminderEnabled || false, waterReminderNext: null, shutdownReminderEnabled: s.shutdownReminderEnabled || false, shutdownReminderNext: null };
+    }
+    // Schema migration — sd.plan → planTasks / planDone
+    if (!s.planTasks) {
+      s.planTasks = { mit: "", t2: "", t3: "" };
+    }
+    if (s.planDone === undefined) {
+      s.planDone = false;
     }
     // brain reset prompts expire at midnight — if the write date isn't today,
     // archive and clear them
@@ -733,7 +791,7 @@ function getState() {
     return s;
   } catch {
     const today = getToday();
-    return { date: today, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, water:0, notes:'', brPrompts:{}, brPromptDate: today, habitStreak: 0, dwCollapsed: undefined, notificationsEnabled: false, waterReminderEnabled: false, waterReminderNext: null, shutdownReminderEnabled: false, shutdownReminderNext: null };
+    return { date: today, habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, planDone: false, planTasks: { mit: "", t2: "", t3: "" }, water:0, notes:'', brPrompts:{}, brPromptDate: today, habitStreak: 0, dwCollapsed: undefined, notificationsEnabled: false, waterReminderEnabled: false, waterReminderNext: null, shutdownReminderEnabled: false, shutdownReminderNext: null };
   }
 }
 function persist(s) { try { localStorage.setItem(KEY, JSON.stringify(s)); } catch { /* storage full or unavailable — UI stays in sync for this session */ } }
@@ -787,9 +845,67 @@ function toggleNested(obj, key) { const s=getState(); s[obj][key]=!s[obj][key]; 
 function toggleFlat(key)        { const s=getState(); s[key]=!s[key];           persist(s); render(s); }
 function setDrawerBody(html) { document.getElementById('drawer-body').innerHTML = html; }
 
+/* ── DEBOUNCE UTILITY ───────────────────────────────────────────── */
+function debounce(fn, delay) {
+  let timer;
+  function debounced(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), delay);
+  }
+  debounced.clear = () => clearTimeout(timer);
+  return debounced;
+}
+function savePlanField(key) {
+  const s = getState();
+  const elId = 'plan-' + key;
+  const el = document.getElementById(elId);
+  if (!s.planTasks) s.planTasks = { mit: "", t2: "", t3: "" };
+  s.planTasks[key] = el ? el.value.trim() : '';
+  persist(s);
+  // Update button state in-place (no drawer re-render — avoids cursor jump)
+  const btn = document.getElementById('plan-drawer-done-btn');
+  if (btn) {
+    const tasks = s.planTasks;
+    const anyFilled = !!(tasks.mit || tasks.t2 || tasks.t3);
+    btn.disabled = !anyFilled;
+    btn.textContent = s.planDone ? 'Unmark' : 'Mark done';
+  }
+}
+function togglePlanDone(event) {
+  if (event) { event.stopPropagation(); event.preventDefault(); }
+  const s = getState();
+  s.planDone = !s.planDone;
+  persist(s);
+  render(s);
+}
+function buildPlanDrawer() {
+  const s = getState();
+  const tasks = s.planTasks || {};
+  const mit = tasks.mit || '';
+  const t2  = tasks.t2  || '';
+  const t3  = tasks.t3  || '';
+  const anyFilled = !!(mit || t2 || t3);
+  const label = s.planDone ? 'Unmark' : 'Mark done';
+  const disabled = anyFilled ? '' : 'disabled';
+  return `
+    <div class="drawer-section-title">Tomorrow's plan</div>
+    <div class="plan-fields">
+      <input id="plan-mit" class="plan-input" placeholder="Most important task…"
+             value="${escapeHtml(mit)}" onchange="savePlanField('mit')">
+      <input id="plan-t2"  class="plan-input" placeholder="Task 2…"
+             value="${escapeHtml(t2)}" onchange="savePlanField('t2')">
+      <input id="plan-t3"  class="plan-input" placeholder="Task 3…"
+             value="${escapeHtml(t3)}" onchange="savePlanField('t3')">
+    </div>
+    <div class="mark-done-row">
+      <button class="mark-done-btn" id="plan-drawer-done-btn"
+              onclick="togglePlanDone(event); closeDrawer();"
+              ${disabled}>${label}</button>
+    </div>`;
+}
+
 /* ── TEXT SAVE ─────────────────────────────────────────────────── */
-let _saveTimer, _notesSaveTimer, _brSaveTimer;
-function save() { clearTimeout(_saveTimer); _saveTimer = setTimeout(saveNow, 300); }
+const save = debounce(saveNow, 300);
 function saveNow() {
   const s = getState();
   s.br  = document.getElementById('br-input').value;
@@ -809,10 +925,7 @@ function saveNow() {
 window.addEventListener('beforeunload', () => { saveNow(); if (typeof saveNotesNow==='function') saveNotesNow(); if (typeof flushBrPrompts==='function') flushBrPrompts(); if (_dwDrawerBlock) saveDwNotesNow(_dwDrawerBlock); });
 
 /* ── BRAIN RESET JOURNAL ───────────────────────────────────────── */
-function saveBrPrompt(key) {
-  clearTimeout(_brSaveTimer);
-  _brSaveTimer = setTimeout(() => flushBrPrompts(), 300);
-}
+const saveBrPrompt = debounce(() => flushBrPrompts(), 300);
 function flushBrPrompts() {
   const s = getState();
   let changed = false;
@@ -892,7 +1005,7 @@ function formatLastExport(dateStr) {
 function resetDay() {
   if (!confirm('Reset today? Your notes will be kept.')) return;
   const s = getState();
-  persist({ date: getToday(), habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || getToday(), habitStreak: s.habitStreak || 0, notificationsEnabled: s.notificationsEnabled || false, waterReminderEnabled: s.waterReminderEnabled || false, waterReminderNext: null, shutdownReminderEnabled: s.shutdownReminderEnabled || false, shutdownReminderNext: null });
+  persist({ date: getToday(), habits:{}, br:'', brDone:false, mit:'', mitDone:false, tasks:{}, taskDone:{}, dw:{}, dwLabel:{}, dwNotes:{}, sd:{}, planDone: false, planTasks: { mit: "", t2: "", t3: "" }, water:0, notes: s.notes || '', brPrompts: s.brPrompts || {}, brPromptDate: s.brPromptDate || getToday(), habitStreak: s.habitStreak || 0, notificationsEnabled: s.notificationsEnabled || false, waterReminderEnabled: s.waterReminderEnabled || false, waterReminderNext: null, shutdownReminderEnabled: s.shutdownReminderEnabled || false, shutdownReminderNext: null });
   render(getState());
   ['br-input','mit','t2','t3','dw-name-1','dw-name-2'].forEach(id => { document.getElementById(id).value = ''; });
   syncWaterSchedule();
@@ -937,10 +1050,11 @@ function render(s) {
     const hasNote = !!(s.dwNotes && s.dwNotes[n] && s.dwNotes[n].trim());
     document.getElementById('dw-note-btn-'+n).classList.toggle('has-note', hasNote);
   });
-  // shutdown
-  ['env','brain','plan'].forEach(k =>
+  // shutdown — env, brain, plan
+  ['env','brain'].forEach(k =>
     document.getElementById('sd-'+k).classList.toggle('done', !!s.sd[k])
   );
+  document.getElementById('sd-plan').classList.toggle('done', !!s.planDone);
   updateProgress(s);
 }
 
@@ -949,7 +1063,7 @@ function updateProgress(s) {
     s.habits.sleep, s.habits.exercise, s.habits.water,
     s.brDone, s.mitDone, s.taskDone[2], s.taskDone[3],
     s.dw[1], s.dw[2],
-    s.sd.env, s.sd.brain, s.sd.plan,
+    s.sd.env, s.sd.brain, s.planDone,
   ];
   const done  = checks.filter(Boolean).length;
   const total = checks.length;
@@ -1026,6 +1140,10 @@ function openDrawer(type, e, param) {
     document.getElementById('drawer-title').textContent = label + ' — details';
     document.getElementById('drawer-icon').className    = 'ti ti-align-left';
     setDrawerBody(buildDwNotes(param));
+  } else if (type === 'plan') {
+    document.getElementById('drawer-title').textContent = 'Tomorrow planned';
+    document.getElementById('drawer-icon').className    = 'ti ti-calendar-check';
+    setDrawerBody(buildPlanDrawer());
   } else if (type === 'settings') {
     document.getElementById('drawer-title').textContent = 'Settings';
     document.getElementById('drawer-icon').className    = 'ti ti-settings';
@@ -1040,10 +1158,22 @@ function openDrawer(type, e, param) {
 }
 function closeDrawer() {
   // Flush any pending text saves before closing the drawer.
-  clearTimeout(_notesSaveTimer); saveNotesNow();
-  clearTimeout(_brSaveTimer);   flushBrPrompts();
-  clearTimeout(_dwNotesSaveTimer); if (_dwDrawerBlock) saveDwNotesNow(_dwDrawerBlock);
+  saveNotes.clear(); saveNotesNow();
+  saveBrPrompt.clear();   flushBrPrompts();
+  saveDwNotes.clear(); if (_dwDrawerBlock) saveDwNotesNow(_dwDrawerBlock);
   _dwDrawerBlock = null;
+  // Flush plan fields to state before closing
+  const planMit = document.getElementById('plan-mit');
+  const planT2  = document.getElementById('plan-t2');
+  const planT3  = document.getElementById('plan-t3');
+  if (planMit || planT2 || planT3) {
+    const s = getState();
+    if (!s.planTasks) s.planTasks = { mit: "", t2: "", t3: "" };
+    if (planMit) s.planTasks.mit = planMit.value.trim();
+    if (planT2)  s.planTasks.t2  = planT2.value.trim();
+    if (planT3)  s.planTasks.t3  = planT3.value.trim();
+    persist(s);
+  }
   document.getElementById('overlay').classList.remove('open');
   document.getElementById('drawer').classList.remove('open');
 }
@@ -1115,10 +1245,7 @@ function buildNotes() {
       oninput="saveNotes()">${notes}</textarea>
     <div class="notes-meta" id="notes-meta">${notes.length} chars · carries over day to day</div>`;
 }
-function saveNotes() {
-  clearTimeout(_notesSaveTimer);
-  _notesSaveTimer = setTimeout(saveNotesNow, 300);
-}
+const saveNotes = debounce(saveNotesNow, 300);
 function saveNotesNow() {
   const ta = document.getElementById('notes-ta');
   if (!ta) return;
@@ -1131,7 +1258,6 @@ function saveNotesNow() {
 
 /* ── DEEP WORK — PER-BLOCK DETAIL NOTES ───────────────────────────── */
 let _dwDrawerBlock = null;
-let _dwNotesSaveTimer;
 let _settingsToastUntil = 0;      // timestamp — green confirmation banners hide after this
 let _settingsToastTimer = null;   // setTimeout id for auto-refresh
 function buildDwNotes(n) {
@@ -1144,10 +1270,7 @@ function buildDwNotes(n) {
       oninput="saveDwNotes(${n})">${notes}</textarea>
     <div class="notes-meta">Resets with the rest of Deep Work at day rollover</div>`;
 }
-function saveDwNotes(n) {
-  clearTimeout(_dwNotesSaveTimer);
-  _dwNotesSaveTimer = setTimeout(() => saveDwNotesNow(n), 300);
-}
+const saveDwNotes = debounce(saveDwNotesNow, 300);
 function saveDwNotesNow(n) {
   const ta = document.getElementById('dw-notes-ta');
   if (!ta) return;
