@@ -87,8 +87,8 @@
 
     /* ── TOP BAR ─────────────────────────────────────────────────── */
     .top-bar     { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1.75rem; }
-    .date-label  { font-size: 11px; color: var(--text-muted); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
-    .today-label { font-size: 30px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; }
+    .date-label  { font-size: 11px; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 3px; }
+    .today-label { font-size: 34px; font-weight: 700; color: var(--text); letter-spacing: -0.5px; }
     .icon-row    { display: flex; gap: 8px; padding-top: 6px; }
     .icon-btn    {
       background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
@@ -147,35 +147,35 @@
     }
     .habit-card.done .check-circle { background: var(--success); border-color: var(--success); color: #fff; }
 
-    /* ── BALL ROLLER ─────────────────────────────────────────────── */
-    .br-box {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 16px; display: flex; align-items: center; gap: 12px;
+    @keyframes check-pop {
+      0%   { transform: scale(1); }
+      50%  { transform: scale(1.35); }
+      100% { transform: scale(1); }
     }
-    .br-box.done-state { background: var(--accent-bg); border-color: var(--accent-border); }
-    .br-box.done-state .br-input { text-decoration: line-through; opacity: 0.5; }
-    .br-left  { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+    .just-done { animation: check-pop 0.35s ease; }
+
+    /* ── BALL ROLLER (sub-row inside MIT card) ───────────────────── */
     .br-badge {
-      font-size: 11px; font-weight: 700; color: var(--accent);
+      font-size: 10px; font-weight: 700; color: var(--accent);
       background: var(--accent-bg); border: 1px solid var(--accent-border);
-      border-radius: 6px; padding: 3px 7px; white-space: nowrap;
+      border-radius: 6px; padding: 3px 7px; white-space: nowrap; flex-shrink: 0;
     }
-    .br-sub   { font-size: 11px; color: var(--text-muted); }
     .br-input {
       flex: 1; background: transparent; border: none;
-      font-size: 16px; color: var(--text); outline: none; font-family: var(--font);
+      font-size: 14px; color: var(--text-secondary); outline: none; font-family: var(--font);
     }
     .br-input::placeholder { color: var(--text-muted); }
+    .br-input.done { text-decoration: line-through; opacity: 0.5; }
     .br-check {
-      width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+      width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border-strong);
       background: transparent; display: flex; align-items: center; justify-content: center;
-      font-size: 12px; color: transparent; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+      font-size: 10px; color: transparent; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
     }
     .br-check.done { background: var(--accent); border-color: var(--accent); color: #fff; }
 
     /* ── TASKS (MIT + 2 more) ────────────────────────────────────── */
     .tasks-list { display: flex; flex-direction: column; gap: 10px; }
-    .task-row   { display: flex; align-items: center; gap: 12px; }
+    .task-row   { display: flex; align-items: center; gap: 12px; padding: 0 16px; border: 1px solid transparent; }
     .task-num   { font-size: 14px; font-weight: 600; color: var(--text-muted); width: 18px; flex-shrink: 0; }
     .task-input {
       flex: 1; background: transparent; border: none;
@@ -185,9 +185,9 @@
     .task-input::placeholder { color: var(--text-muted); }
     .task-input:focus        { border-bottom-color: var(--accent); }
     .task-check {
-      width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--border-strong);
+      width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid var(--border-strong);
       background: transparent; display: flex; align-items: center; justify-content: center;
-      font-size: 12px; color: transparent; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+      font-size: 11px; color: transparent; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
     }
     .task-check.done { background: var(--accent); border-color: var(--accent); color: #fff; }
     .task-row.done-state .task-input { text-decoration: line-through; opacity: 0.5; }
@@ -195,7 +195,7 @@
     /* ── MIT ─────────────────────────────────────────────────────── */
     .mit-row   {
       background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-      padding: 16px; display: flex; align-items: center; gap: 12px;
+      padding: 16px; display: flex; flex-direction: column; gap: 10px;
     }
     .mit-row.done-state { background: var(--warning-bg); border-color: var(--warning-border); }
     .mit-row.done-state .mit-input { text-decoration: line-through; opacity: 0.5; }
@@ -216,6 +216,9 @@
       font-size: 12px; color: transparent; cursor: pointer; flex-shrink: 0; transition: all 0.15s;
     }
     .mit-check.done { background: var(--warning); border-color: var(--warning); color: #fff; }
+
+    .mit-top-row { display: flex; align-items: center; gap: 12px; }
+    .br-sub-row  { display: flex; align-items: center; gap: 12px; }
 
     /* ── DEEP WORK ───────────────────────────────────────────────── */
     .dw-summary {
@@ -731,27 +734,26 @@
     <div class="section">
       <div class="section-title">Tasks</div>
       <div class="tasks-list">
-        <div class="br-box" id="br-box">
-          <div class="br-left">
-            <div class="br-badge">Ball Roller</div>
-            <div class="br-sub">gets the day rolling</div>
-          </div>
-          <input class="br-input" id="br-input" placeholder="What kicks things off?" oninput="save()" />
-          <button class="br-check" id="br-check" onclick="toggleFlat('brDone')" aria-label="Mark done">✓</button>
-        </div>
         <div class="mit-row" id="mit-row">
-          <div class="mit-badge">MIT</div>
-          <input class="mit-input" id="mit" placeholder="The one thing that counts" oninput="save()" />
-          <button class="mit-check" id="mit-check" onclick="toggleFlat('mitDone')" aria-label="Mark MIT done">✓</button>
+          <div class="mit-top-row">
+            <div class="mit-badge">MIT</div>
+            <input class="mit-input" id="mit" placeholder="The one thing that counts" oninput="save()" />
+            <button class="mit-check" id="mit-check" onclick="toggleFlat('mitDone')" aria-label="Mark MIT done">✓</button>
+          </div>
+          <div class="br-sub-row">
+            <div class="br-badge">Ball Roller</div>
+            <input class="br-input" id="br-input" placeholder="What kicks things off?" oninput="save()" />
+            <button class="br-check" id="br-check" onclick="toggleFlat('brDone')" aria-label="Mark done">✓</button>
+          </div>
         </div>
         <div class="task-row">
           <div class="task-num">2</div>
-          <input class="task-input" id="t2" placeholder="Second priority" oninput="save()" />
+          <input class="task-input" id="t2" placeholder="What else matters?" oninput="save()" />
           <button class="task-check" id="t2c" onclick="toggleNested('taskDone',2)" aria-label="Mark done">✓</button>
         </div>
         <div class="task-row">
           <div class="task-num">3</div>
-          <input class="task-input" id="t3" placeholder="Third priority" oninput="save()" />
+          <input class="task-input" id="t3" placeholder="One more thing?" oninput="save()" />
           <button class="task-check" id="t3c" onclick="toggleNested('taskDone',3)" aria-label="Mark done">✓</button>
         </div>
       </div>
@@ -988,8 +990,9 @@ function archiveBrPrompts(prompts, date) {
 }
 
 /* ── TOGGLES ───────────────────────────────────────────────────── */
-function toggleNested(obj, key) { const s=getState(); s[obj][key]=!s[obj][key]; persist(s); render(s); }
-function toggleFlat(key)        { const s=getState(); s[key]=!s[key];           persist(s); render(s); }
+function toggleNested(obj, key) { const s=getState(); s[obj][key]=!s[obj][key]; persist(s); render(s); if (s[obj][key]) pulseCheck(document.querySelector({habits:'#hab-'+key+' .check-circle',taskDone:'#t'+key+'c',dw:'#dw-'+key+' .block-dot',sd:'#sd-'+key+' .sd-dot'}[obj])); }
+function toggleFlat(key)        { const s=getState(); s[key]=!s[key];           persist(s); render(s); if (s[key]) pulseCheck(document.querySelector({brDone:'#br-check',mitDone:'#mit-check'}[key])); }
+function pulseCheck(el) { if (!el) return; el.classList.remove('just-done'); void el.offsetWidth; el.classList.add('just-done'); }
 function setDrawerBody(html) { document.getElementById('drawer-body').innerHTML = html; }
 
 /* ── DEBOUNCE UTILITY ───────────────────────────────────────────── */
@@ -1202,7 +1205,7 @@ function render(s) {
   // ball roller
   if (s.br && !document.getElementById('br-input').value) document.getElementById('br-input').value = s.br;
   document.getElementById('br-check').classList.toggle('done', !!s.brDone);
-  document.getElementById('br-box').classList.toggle('done-state', !!s.brDone);
+  document.getElementById('br-input').classList.toggle('done', !!s.brDone);
   // MIT
   const mitEl = document.getElementById('mit');
   if (s.mit && !mitEl.value) mitEl.value = s.mit;
