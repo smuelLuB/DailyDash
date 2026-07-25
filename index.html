@@ -535,7 +535,7 @@
       margin-bottom: 6px;
     }
     .mood-dots {
-      display: flex; gap: 8px; justify-content: flex-start;
+      display: flex; justify-content: space-between;
     }
     .mood-day {
       display: flex; flex-direction: column; align-items: center; gap: 3px;
@@ -1265,12 +1265,12 @@ function buildBrainReset() {
         <button class="mood-chip great${mood === 'great' ? ' selected' : ''}" data-mood="great" onclick="setMood('great')">😊 Great</button>
       </div>
     </div>`;
-  return rows + moodSection + `
+  return rows + moodSection + buildMoodStrip() + buildBrHistory() + `
     <div class="mark-done-row">
       <button class="mark-done-btn${done?' done':''}" id="br-done-btn" onclick="markBrainResetDone()">
         ${done ? '✓ Brain reset done' : 'Mark brain reset done'}
       </button>
-    </div>` + buildMoodStrip() + buildBrHistory() + `
+    </div>` + `
     <div class="export-row">
       <button class="export-btn" onclick="exportJournal('md')"><i class="ti ti-file-text"></i> Export .md</button>
       <button class="export-btn" onclick="exportJournal('json')"><i class="ti ti-database-export"></i> Backup .json</button>
